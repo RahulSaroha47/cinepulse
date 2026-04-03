@@ -1,0 +1,33 @@
+# Node.js / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment variables (NEVER push these)
+.env
+.env.local
+.env.development
+.env.production
+
+# Java / Spring Boot / Maven
+backend/target/
+*.class
+*.jar
+*.war
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+
+# VS Code
+.vscode/
+
+# Docker
+docker/data/
+
+# Mac
+.DS_Store
