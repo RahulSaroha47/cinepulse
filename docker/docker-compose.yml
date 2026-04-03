@@ -1,0 +1,20 @@
+services:
+  mysql:
+    image: mysql:8
+    container_name: cinepulse-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cinepulse
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  redis:
+    image: redis:7
+    container_name: cinepulse-redis
+    ports:
+      - "6379:6379"
+
+volumes:
+  mysql_data:
