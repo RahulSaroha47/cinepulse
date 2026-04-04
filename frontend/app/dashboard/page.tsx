@@ -34,10 +34,13 @@ function getGreeting() {
   return 'Good evening';
 }
 
+type UserStats = { streak: number; totalScore: number; rank: number; quizzesCompleted: number };
+
 export default function Dashboard() {
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [initials, setInitials] = useState('?');
+  const [stats, setStats] = useState<UserStats | null>(null);
 
   useEffect(() => {
     const raw = localStorage.getItem('cp_user');
@@ -50,6 +53,16 @@ export default function Dashboard() {
           setInitials(name.slice(0, 2).toUpperCase());
         }
       } catch {}
+    }
+
+    const token = localStorage.getItem('cp_token');
+    if (token) {
+      fetch('http://localhost:8080/api/users/me/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data) setStats(data); })
+        .catch(() => {});
     }
   }, []);
 
@@ -87,7 +100,7 @@ export default function Dashboard() {
             className="flex items-center gap-[6px] rounded-full px-[14px] py-[5px] font-code text-[11px] text-cp-gold whitespace-nowrap"
             style={{ background: 'rgba(244,196,48,.08)', border: '1px solid rgba(244,196,48,.2)' }}
           >
-            🔥 12 day streak
+            🔥 {stats ? `${stats.streak} day streak` : '— streak'}
           </div>
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center font-heading text-[13px] cursor-pointer shrink-0"
@@ -115,7 +128,12 @@ export default function Dashboard() {
             className="flex gap-[1px] rounded-[10px] overflow-hidden"
             style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.07)' }}
           >
-            {[['247', 'Films'], ['12', 'Streak'], ['#38', 'Rank'], ['84', 'Reviews']].map(([val, label]) => (
+            {([
+              [stats ? String(stats.quizzesCompleted) : '—', 'Quizzes'],
+              [stats ? String(stats.streak) : '—', 'Streak'],
+              [stats ? `#${stats.rank}` : '—', 'Rank'],
+              [stats ? stats.totalScore.toLocaleString() : '—', 'Score'],
+            ] as [string, string][]).map(([val, label]) => (
               <div key={label} className="px-6 py-3 bg-cp-surface text-center">
                 <div className="font-heading text-2xl text-cp-gold leading-none">{val}</div>
                 <div className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted mt-[3px]">{label}</div>
@@ -275,7 +293,7 @@ export default function Dashboard() {
                 className="flex items-center gap-3 py-[9px] rounded-md -mx-1 px-1"
                 style={{ background: 'rgba(230,57,70,.06)' }}
               >
-                <span className="font-heading text-[.9rem] w-[22px] shrink-0 text-cp-red">#38</span>
+                <span className="font-heading text-[.9rem] w-[22px] shrink-0 text-cp-red">{stats ? `#${stats.rank}` : '—'}</span>
                 <div
                   className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-heading text-[11px] shrink-0"
                   style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
@@ -284,9 +302,9 @@ export default function Dashboard() {
                 </div>
                 <div className="flex-1">
                   <div className="font-body text-[.9rem] font-medium">You</div>
-                  <div className="font-code text-[9px] text-cp-muted mt-[1px]">🔥 12 streak</div>
+                  <div className="font-code text-[9px] text-cp-muted mt-[1px]">🔥 {stats ? `${stats.streak} streak` : '—'}</div>
                 </div>
-                <span className="font-code text-[11px] text-cp-gold">4,220</span>
+                <span className="font-code text-[11px] text-cp-gold">{stats ? stats.totalScore.toLocaleString() : '—'}</span>
               </div>
             </div>
           </div>

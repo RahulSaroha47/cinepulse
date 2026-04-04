@@ -33,6 +33,7 @@ API base URL from frontend: `http://localhost:8080`
   - `--color-cp-gold: #f4c430` — secondary accent (links, highlights)
   - `--color-cp-text: #f1f0fb` — primary text
   - `--color-cp-muted: #6b7280` — muted text
+- **Shared button classes** in `globals.css`: `.btn-primary`, `.btn-ghost`
 
 ## Next.js 16 Conventions (breaking changes — read before writing code)
 - App Router only. Pages/layouts are Server Components by default.
@@ -49,14 +50,16 @@ API base URL from frontend: `http://localhost:8080`
 app/
   layout.tsx                  — root layout, fonts, global styles
   page.tsx                    — redirects to /login
-  globals.css                 — @theme tokens, base styles, autofill fix
+  globals.css                 — @theme tokens, base styles, .btn-primary, .btn-ghost
   (auth)/
     layout.tsx                — split-screen layout (left: form, right: poster grid)
     PosterGrid.tsx            — 'use client', 17 real TMDB posters in staggered grid
     login/page.tsx            — login form, field-level errors
     signup/page.tsx           — signup form, password strength bar, field-level errors
   dashboard/
-    page.tsx                  — placeholder, next to build
+    page.tsx                  — full dashboard: navbar, stats, featured hero, games, watchlist, leaderboard
+  quiz/
+    page.tsx                  — full quiz flow: intro → 5 questions → result breakdown
 ```
 
 ## Backend Structure
@@ -68,16 +71,41 @@ com.cinepulse.backend/
     AuthRequest               — { username?, email (required), password (required, min 6) }
     AuthResponse              — { token, username, email }
   security/
-    JwtUtil, JwtFilter, SecurityConfig
+    JwtUtil                   — generate + validate JWT
+    JwtFilter                 — reads Authorization header, sets User as principal in SecurityContext
+    SecurityConfig            — global CORS (localhost:3000), stateless session, JWT filter chain
   user/
-    User (JPA entity), UserRepository
+    User (JPA entity)         — id, username, email, passwordHash, streak, lastQuizDate, totalScore
+    UserRepository
+  movie/
+    Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview
+    MovieRepository
+  tmdb/
+    TmdbService               — seeds movies from TMDB API on startup (English + Hindi popular)
+    TmdbMovieResult           — DTO for TMDB movie response
+    TmdbPageResponse          — DTO for TMDB paginated response
+  quiz/
+    QuestionType (enum)       — POSTER_BLIND, WHO_SAID_IT, DIRECTORS_CUT, RELEASE_YEAR
+    QuizQuestion (entity)     — type, questionText, posterPath, optionsJson, correctAnswer
+    DailyQuiz (entity)        — quizDate (unique), questions (@ManyToMany), theme, themePosterPath
+    QuizAttempt (entity)      — user, quizDate, answersJson, score, completedAt
+    Dialogue (entity)         — text, movieTitle, character_name (for WHO_SAID_IT)
+    DirectorEntry (entity)    — name, moviesJson (for DIRECTORS_CUT)
+    QuizController            — GET /api/quiz/today, POST /api/quiz/submit
+    QuizService               — lazy daily quiz generation, scoring, streak updates
+    dto/                      — QuizQuestionDto, TodayQuizResponse, AnswerSubmission,
+                                 QuizSubmitRequest, QuizResultResponse
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
     UsernameAlreadyExistsException — 409 Conflict
-    InvalidCredentialsException    — 401 Unauthorized
+    InvalidCredentialsException    — 401 Unauthorized (different messages for no-account vs wrong-password)
+  DataSeeder                  — ApplicationRunner, seeds movies + dialogues + directors on startup
 ```
-CORS: backend allows `http://localhost:3000`
+
+## CORS
+Global config in `SecurityConfig` for all `/api/**` routes → `http://localhost:3000`.
+Do NOT use `@CrossOrigin` on individual controllers.
 
 ## Auth Flow
 - Signup: `POST /api/auth/signup` → `{ username, email, password }` → `{ token, username, email }`
@@ -86,24 +114,76 @@ CORS: backend allows `http://localhost:3000`
 - Frontend stores user: `localStorage.setItem("cp_user", JSON.stringify({ username, email }))`
 - After login/signup → redirect to `/dashboard`
 - Subsequent API requests: `Authorization: Bearer <token>` header
+- `@AuthenticationPrincipal User user` in controllers (principal is our JPA User entity, not UserDetails)
 
 ## Error Handling Pattern
 Frontend maps HTTP status → field-level errors (red border + message under the field):
 - `409` + "email" → error under email field
 - `409` + "username" → error under username field
-- `401` → error under password field
+- `401` + "no account" → error under email field ("No account found with this email.")
+- `401` + other → error under password field ("Incorrect password.")
 - `400` → validation error under relevant field
 - network error → general error below form
 Errors clear when user starts typing in the affected field.
 
-## TMDB Poster Paths (used in PosterGrid)
-Base URL: `https://image.tmdb.org/t/p/w500`
-Animal, Dark Knight, 3 Idiots, Inception, RRR, Avengers Endgame, Kabir Singh,
-Interstellar, PK, Avatar, Dangal, Forrest Gump, Sanju, Dhurandhar, Chhichhore,
-Munna Bhai MBBS, Swades — all verified 200 OK.
+## Quiz System
+
+### Question Types & Scoring
+| Type | Base Points | Source data |
+|---|---|---|
+| POSTER_BLIND | 150 | movies table (poster image) |
+| WHO_SAID_IT | 100 | dialogues table |
+| DIRECTORS_CUT | 100 | director_entries table |
+| RELEASE_YEAR | 100 | movies table |
+
+- Speed bonus: `timeLeft × 2` added to base (timer = 20s per question)
+- Streak multiplier applied to total: 1–6 days=1.0×, 7–13=1.1×, 14–29=1.25×, 30+=1.5×
+- Max score per quiz: 800 pts
+
+### Daily Quiz Composition
+5 questions per day, shuffled randomly:
+- 2× POSTER_BLIND
+- 1× WHO_SAID_IT
+- 1× DIRECTORS_CUT
+- 1× RELEASE_YEAR
+
+### Quiz API
+- `GET /api/quiz/today` → returns questions without `correctAnswer` field
+- `POST /api/quiz/submit` → `{ answers: [{questionId, selectedAnswer, timeLeft}] }` → score breakdown
+
+### Quiz Generation (lazy)
+Generated on first `GET /api/quiz/today` of the day. Race condition handled with `DataIntegrityViolationException` catch → re-fetch. One `DailyQuiz` row per day, same quiz for all users.
+
+### Replay Prevention
+`quiz_attempts` has unique constraint on `(user_id, quizDate)`. Submit endpoint rejects if attempt already exists.
+
+### Dev: Reset today's quiz
+```sql
+DELETE FROM quiz_attempts;
+DELETE FROM daily_quiz_questions;
+DELETE FROM daily_quizzes;
+```
+
+## Database Tables
+| Table | Written by |
+|---|---|
+| users | POST /api/auth/signup; updated by POST /api/quiz/submit |
+| movies | DataSeeder on startup (TMDB API) |
+| dialogues | DataSeeder on startup (hardcoded) |
+| director_entries | DataSeeder on startup (hardcoded) |
+| quiz_questions | QuizService on first GET /quiz/today of the day |
+| daily_quizzes | QuizService on first GET /quiz/today of the day |
+| daily_quiz_questions | Hibernate join table for DailyQuiz ↔ QuizQuestion |
+| quiz_attempts | POST /api/quiz/submit |
+
+## TMDB Integration
+- API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
+- Base URL: `https://api.themoviedb.org/3`
+- Poster CDN: `https://image.tmdb.org/t/p/w500{posterPath}`
+- Seeder fetches: English popular pages 1–4, Hindi popular pages 1–2
 
 ## Feature Roadmap
-1. **Daily Quiz** — streaks, Redis cache
+1. **Daily Quiz** — ✅ done
 2. **CinePulse Wordle** — one movie/day
 3. **Party Mode** — local multiplayer, turn-based bowling style, speed scoring
 4. **AI Movie Recommender** — Claude API
@@ -117,30 +197,10 @@ Movie categories: Hollywood, Bollywood, Korean, Anime, Web Series, World Cinema
 
 ## Build Status
 - [x] JWT auth — signup/login backend complete
-- [x] Custom exceptions — `EmailAlreadyExistsException`, `UsernameAlreadyExistsException`, `InvalidCredentialsException`
-- [x] GlobalExceptionHandler — proper HTTP status codes (409, 401, 400)
+- [x] Custom exceptions + GlobalExceptionHandler
 - [x] Docker — MySQL (3307) + Redis (6379) running
 - [x] Frontend auth pages — `/login` + `/signup`, split-screen, real TMDB posters, field-level errors
-- [ ] **Next: Dashboard page** — design approved, ready to build
-
-## Dashboard Design (approved)
-File: `dashboard-preview.html` in project root (throwaway, don't commit)
-
-**Layout:**
-- Top navbar: logo, nav links (Home/Discover/Games/Social), search bar, streak chip, avatar
-- No sidebar — all navigation is top-level
-- Max-width 1300px, padding 2.5rem
-
-**Sections (top to bottom):**
-1. **Greeting + Stats bar** — "Good evening, Rahul", 4 stats (Films / Streak / Rank / Reviews)
-2. **Featured Hero** — 300px tall, movie backdrop blur, gradient overlay, quiz theme tag + title + CTA buttons
-3. **Games & Features** — horizontal scroll cards (Daily Quiz, Wordle, Party Mode, AI Picks, Who Said It?, Reviews) with Live/New/Soon badges
-4. **Two-column row:**
-   - Left: Watchlist grid (poster thumbnails 90×134px + add button)
-   - Right: Leaderboard card (top 3 + user's own rank highlighted in red)
-
-**Key UI decisions:**
-- Featured hero background = today's quiz theme movie poster
-- Game cards have subtle colored glow per category
-- User's leaderboard row highlighted with red tint
-- Watchlist "+" add card with dashed border
+- [x] Dashboard — navbar, stats bar, featured hero, games scroll, watchlist, leaderboard (static data)
+- [x] TMDB integration — movie seeder, ~120 movies on startup
+- [x] Daily Quiz — all 4 question types, scoring, streak tracking, result breakdown
+- [ ] **Next: Wire dashboard stats from real DB data (streak, score, rank)**
