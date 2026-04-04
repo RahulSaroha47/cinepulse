@@ -31,3 +31,6 @@ docker/data/
 
 # Mac
 .DS_Store
+
+# Maven wrapper Windows file
+backend/mvnw.cmd

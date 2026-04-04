@@ -1,5 +1,8 @@
 package com.cinepulse.backend.auth;
 
+import com.cinepulse.backend.exception.EmailAlreadyExistsException;
+import com.cinepulse.backend.exception.InvalidCredentialsException;
+import com.cinepulse.backend.exception.UsernameAlreadyExistsException;
 import com.cinepulse.backend.security.JwtUtil;
 import com.cinepulse.backend.user.User;
 import com.cinepulse.backend.user.UserRepository;
@@ -16,13 +19,12 @@ public class AuthService {
     private final JwtUtil jwtUtil;
 
     public AuthResponse signup(AuthRequest request) {
-
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+            throw new EmailAlreadyExistsException(request.getEmail());
         }
 
         if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
+            throw new UsernameAlreadyExistsException(request.getUsername());
         }
 
         User user = new User();
@@ -37,12 +39,11 @@ public class AuthService {
     }
 
     public AuthResponse login(AuthRequest request) {
-
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
-            throw new RuntimeException("Invalid password");
+            throw new InvalidCredentialsException();
         }
 
         String token = jwtUtil.generateToken(user.getEmail());
