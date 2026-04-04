@@ -26,6 +26,12 @@ public class User {
 
     private Integer reputationScore = 0;
 
+    private Integer streak = 0;
+
+    private java.time.LocalDate lastQuizDate;
+
+    private Integer totalScore = 0;
+
     private LocalDateTime createdAt;
 
     @PrePersist

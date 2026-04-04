@@ -26,6 +26,37 @@ body {
   font-family: var(--font-cormorant), serif;
 }
 
+/* Shared button utilities */
+.btn-primary {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-primary:hover { background: #cf2f3b; }
+
+.btn-ghost {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.07);
+  color: #f1f0fb;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 5px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,.12); }
+
 input:-webkit-autofill,
 input:-webkit-autofill:focus {
   transition: background-color 9999s ease-in-out 0s;

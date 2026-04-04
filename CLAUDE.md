@@ -121,4 +121,26 @@ Movie categories: Hollywood, Bollywood, Korean, Anime, Web Series, World Cinema
 - [x] GlobalExceptionHandler — proper HTTP status codes (409, 401, 400)
 - [x] Docker — MySQL (3307) + Redis (6379) running
 - [x] Frontend auth pages — `/login` + `/signup`, split-screen, real TMDB posters, field-level errors
-- [ ] **Next: Dashboard / home page**
+- [ ] **Next: Dashboard page** — design approved, ready to build
+
+## Dashboard Design (approved)
+File: `dashboard-preview.html` in project root (throwaway, don't commit)
+
+**Layout:**
+- Top navbar: logo, nav links (Home/Discover/Games/Social), search bar, streak chip, avatar
+- No sidebar — all navigation is top-level
+- Max-width 1300px, padding 2.5rem
+
+**Sections (top to bottom):**
+1. **Greeting + Stats bar** — "Good evening, Rahul", 4 stats (Films / Streak / Rank / Reviews)
+2. **Featured Hero** — 300px tall, movie backdrop blur, gradient overlay, quiz theme tag + title + CTA buttons
+3. **Games & Features** — horizontal scroll cards (Daily Quiz, Wordle, Party Mode, AI Picks, Who Said It?, Reviews) with Live/New/Soon badges
+4. **Two-column row:**
+   - Left: Watchlist grid (poster thumbnails 90×134px + add button)
+   - Right: Leaderboard card (top 3 + user's own rank highlighted in red)
+
+**Key UI decisions:**
+- Featured hero background = today's quiz theme movie poster
+- Game cards have subtle colored glow per category
+- User's leaderboard row highlighted with red tint
+- Watchlist "+" add card with dashed border

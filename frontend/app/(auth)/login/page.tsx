@@ -29,9 +29,13 @@ export default function LoginPage() {
         const data = await res.json().catch(() => ({}));
         const message: string = data.message || "Login failed. Please try again.";
 
-        // 401 = wrong credentials → show on password field
+        // 401 = wrong credentials
         if (res.status === 401) {
-          setErrors({ password: "Invalid email or password." });
+          if (message.toLowerCase().includes("no account")) {
+            setErrors({ email: "No account found with this email." });
+          } else {
+            setErrors({ password: "Incorrect password." });
+          }
         } else if (res.status === 400) {
           if (message.toLowerCase().includes("email")) {
             setErrors({ email: message });

@@ -27,3 +27,7 @@ server:
 jwt:
   secret: cinepulse-super-secret-key-must-be-at-least-32-characters-long
   expiry: 86400000
+
+tmdb:
+  api-key: ${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}
+  base-url: https://api.themoviedb.org/3
