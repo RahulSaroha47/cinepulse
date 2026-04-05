@@ -24,4 +24,15 @@ public class Movie {
 
     @Column(columnDefinition = "TEXT")
     private String overview;
+
+    private String genre;
+
+    private String language;
+
+    private String director;
+
+    private String cast;
+
+    @Column(columnDefinition = "TEXT")
+    private String tagline;
 }

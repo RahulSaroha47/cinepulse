@@ -11,4 +11,8 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     boolean existsByTmdbId(Long tmdbId);
 
     List<Movie> findAllByPosterPathIsNotNull();
+
+    List<Movie> findByGenreIsNull();
+
+    List<Movie> findByGenreIsNotNullAndDirectorIsNotNullAndCastIsNotNullAndTaglineIsNotNull();
 }

@@ -207,7 +207,10 @@ export default function Dashboard() {
           {GAME_CARDS.map((card) => (
             <div
               key={card.name}
-              onClick={() => card.name === 'Daily Quiz' ? router.push('/quiz') : undefined}
+              onClick={() => {
+                if (card.name === 'Daily Quiz') router.push('/quiz');
+                else if (card.name === 'Wordle') router.push('/wordle');
+              }}
               className="shrink-0 w-[180px] bg-cp-surface border border-cp-border rounded-[10px] p-5 cursor-pointer transition-all hover:border-white/15 hover:-translate-y-0.5 relative overflow-hidden"
             >
               <div
