@@ -2,6 +2,7 @@
 
 ## Project
 Movie lover's social platform. Solo project by Rahul Saroha.
+**Focus: Bollywood (Hindi movies only)** — quiz, wordle, and all game data is Bollywood-only.
 
 ## Stack
 - **Frontend:** Next.js 16.2.2 (App Router) + Tailwind CSS v4 — `/frontend`
@@ -60,6 +61,8 @@ app/
     page.tsx                  — full dashboard: navbar, stats, featured hero, games, watchlist, leaderboard
   quiz/
     page.tsx                  — full quiz flow: intro → 5 questions → result breakdown
+  wordle/
+    page.tsx                  — fixed-height two-column layout: clues (left) + guesses/input (right)
 ```
 
 ## Backend Structure
@@ -78,11 +81,14 @@ com.cinepulse.backend/
     User (JPA entity)         — id, username, email, passwordHash, streak, lastQuizDate, totalScore
     UserRepository
   movie/
-    Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview
+    Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview,
+                                 genre, language, director, cast, tagline
     MovieRepository
   tmdb/
-    TmdbService               — seeds movies from TMDB API on startup (English + Hindi popular)
-    TmdbMovieResult           — DTO for TMDB movie response
+    TmdbService               — seeds Bollywood movies from TMDB on startup (/discover/movie?with_original_language=hi, 8 pages ~160 movies)
+                                 enrichMovies() fetches genre/language/director/cast/tagline per movie (runs once)
+    TmdbMovieResult           — DTO for TMDB movie list response
+    TmdbMovieDetails          — DTO for /movie/{id}?append_to_response=credits (enrichment)
     TmdbPageResponse          — DTO for TMDB paginated response
   quiz/
     QuestionType (enum)       — POSTER_BLIND, WHO_SAID_IT, DIRECTORS_CUT, RELEASE_YEAR
@@ -95,12 +101,22 @@ com.cinepulse.backend/
     QuizService               — lazy daily quiz generation, scoring, streak updates
     dto/                      — QuizQuestionDto, TodayQuizResponse, AnswerSubmission,
                                  QuizSubmitRequest, QuizResultResponse
+  wordle/
+    DailyWordle (entity)      — wordleDate (unique), movie (ManyToOne)
+    WordleAttempt (entity)    — user, wordleDate, guessesJson, solved, completedAt
+                                 unique constraint: (user_id, wordle_date)
+    DailyWordleRepository
+    WordleAttemptRepository
+    WordleService             — lazy daily wordle generation (date-seeded random), clue logic, guess validation
+    WordleController          — GET /api/wordle/today, POST /api/wordle/guess, GET /api/wordle/movies
+    dto/                      — ClueDto, WordleStatusResponse, GuessRequest, GuessResponse,
+                                 MovieRevealDto, MovieTitleDto
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
     UsernameAlreadyExistsException — 409 Conflict
     InvalidCredentialsException    — 401 Unauthorized (different messages for no-account vs wrong-password)
-  DataSeeder                  — ApplicationRunner, seeds movies + dialogues + directors on startup
+  DataSeeder                  — ApplicationRunner, seeds movies + enriches + dialogues + directors on startup
 ```
 
 ## CORS
@@ -164,27 +180,83 @@ DELETE FROM daily_quiz_questions;
 DELETE FROM daily_quizzes;
 ```
 
+## Wordle System
+
+### How to Play
+- One Bollywood movie per day, same for all users
+- 6 guesses max — type freely or pick from autocomplete dropdown
+- Each wrong guess unlocks the next clue
+
+### Clue Unlock Sequence
+| Shown at start | After guess 1 | After guess 2 | After guess 3 | After guess 4 | After guess 5 |
+|---|---|---|---|---|---|
+| Genre + Release Year | Language | Director | Cast | Tagline | First Letter |
+
+### Input Behaviour
+- Autocomplete dropdown uses **fuse.js** (fuzzy search, threshold 0.25) + exact substring match
+- If user selects from dropdown → that exact DB title is submitted
+- If user types freely without selecting → raw typed text submitted as-is
+- `/api/wordle/movies` is **public** (no auth required) — permitted in SecurityConfig
+
+### Wordle Scoring / Streak
+⚠️ **TODO — not yet decided.** Scoring and streak logic for Wordle will be designed separately.
+
+### Wordle API
+- `GET /api/wordle/today` → clues unlocked so far + guess history + backgroundPosterPath (always set, used for blurred bg)
+- `POST /api/wordle/guess` → `{ guess: string }` → correct/wrong + nextClue if unlocked + movie reveal on game over
+- `GET /api/wordle/movies` → all movie titles for autocomplete (public, no auth)
+
+### Daily Wordle Generation (lazy)
+Generated on first `GET /api/wordle/today` of the day. Date used as random seed — deterministic, same movie for all users/servers. Picks only from movies with all enrichment fields populated.
+
+### Replay Prevention
+`wordle_attempts` has unique constraint on `(user_id, wordle_date)`.
+
+### Dev: Reset today's wordle
+```sql
+DELETE FROM wordle_attempts;
+DELETE FROM daily_wordles;
+```
+
+### Dev: Reset everything (full re-seed)
+```sql
+DELETE FROM wordle_attempts;
+DELETE FROM daily_wordles;
+DELETE FROM quiz_attempts;
+DELETE FROM daily_quiz_questions;
+DELETE FROM daily_quizzes;
+DELETE FROM quiz_questions;
+DELETE FROM dialogues;
+DELETE FROM director_entries;
+DELETE FROM movies;
+```
+
 ## Database Tables
 | Table | Written by |
 |---|---|
 | users | POST /api/auth/signup; updated by POST /api/quiz/submit |
-| movies | DataSeeder on startup (TMDB API) |
-| dialogues | DataSeeder on startup (hardcoded) |
-| director_entries | DataSeeder on startup (hardcoded) |
+| movies | DataSeeder on startup (TMDB API — Bollywood only) |
+| dialogues | DataSeeder on startup (Bollywood hardcoded) |
+| director_entries | DataSeeder on startup (Bollywood hardcoded) |
 | quiz_questions | QuizService on first GET /quiz/today of the day |
 | daily_quizzes | QuizService on first GET /quiz/today of the day |
 | daily_quiz_questions | Hibernate join table for DailyQuiz ↔ QuizQuestion |
 | quiz_attempts | POST /api/quiz/submit |
+| daily_wordles | WordleService on first GET /wordle/today of the day |
+| wordle_attempts | POST /api/wordle/guess |
 
 ## TMDB Integration
 - API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
 - Base URL: `https://api.themoviedb.org/3`
 - Poster CDN: `https://image.tmdb.org/t/p/w500{posterPath}`
-- Seeder fetches: English popular pages 1–4, Hindi popular pages 1–2
+- Seeder fetches: **Bollywood only** — `/discover/movie?with_original_language=hi`, 8 pages (~160 movies)
+- Enrichment: `/movie/{tmdbId}?append_to_response=credits` — fetches genre, language, tagline, director, cast
+- Enrichment runs once on startup (skipped if all movies already have genre populated)
+- To expand movie data later: increase pages in `TmdbService.seedMovies()` (max ~75 pages for all Hindi films)
 
 ## Feature Roadmap
 1. **Daily Quiz** — ✅ done
-2. **CinePulse Wordle** — one movie/day
+2. **CinePulse Wordle** — ✅ done (scoring/streak TBD)
 3. **Party Mode** — local multiplayer, turn-based bowling style, speed scoring
 4. **AI Movie Recommender** — Claude API
 5. **Reviews + AI Summary** — Claude API
@@ -193,14 +265,15 @@ DELETE FROM daily_quizzes;
 8. **Who Said It?** — dialogue guessing game
 9. **Movie Pages** — TMDB API
 
-Movie categories: Hollywood, Bollywood, Korean, Anime, Web Series, World Cinema
-
 ## Build Status
 - [x] JWT auth — signup/login backend complete
 - [x] Custom exceptions + GlobalExceptionHandler
 - [x] Docker — MySQL (3307) + Redis (6379) running
 - [x] Frontend auth pages — `/login` + `/signup`, split-screen, real TMDB posters, field-level errors
-- [x] Dashboard — navbar, stats bar, featured hero, games scroll, watchlist, leaderboard (static data)
-- [x] TMDB integration — movie seeder, ~120 movies on startup
+- [x] Dashboard — navbar, stats bar, featured hero, games scroll, watchlist, leaderboard
+- [x] TMDB integration — Bollywood movie seeder (~160 movies) + enrichment (genre, director, cast, tagline)
 - [x] Daily Quiz — all 4 question types, scoring, streak tracking, result breakdown
-- [ ] **Next: Wire dashboard stats from real DB data (streak, score, rank)**
+- [x] Dashboard stats — wired from real DB (`/api/users/me/stats`)
+- [x] CinePulse Wordle — progressive clue reveal, 6 guesses, blurred bg, game over reveal
+- [ ] Wordle scoring + streak — **TODO, to be decided**
+- [ ] Leaderboard — Redis sorted sets
