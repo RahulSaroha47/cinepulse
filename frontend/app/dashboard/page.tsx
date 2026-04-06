@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 
 const GAME_CARDS = [
   { icon: '🎯', name: 'Daily Quiz',   sub: '10 questions today',  badge: 'live', glow: 'rgba(230,57,70,.08)' },
-  { icon: '🟨', name: 'Wordle',       sub: "Guess today's movie", badge: 'live', glow: 'rgba(244,196,48,.06)' },
+  { icon: '🟨', name: 'Guess the Movie', sub: "Guess today's film", badge: 'live', glow: 'rgba(244,196,48,.06)' },
   { icon: '🎳', name: 'Party Mode',   sub: 'Local multiplayer',   badge: 'new',  glow: 'rgba(139,92,246,.06)' },
   { icon: '🤖', name: 'AI Picks',     sub: 'Powered by Claude',   badge: 'new',  glow: 'rgba(34,197,94,.05)'  },
   { icon: '💬', name: 'Who Said It?', sub: 'Iconic dialogues',    badge: 'soon', glow: 'rgba(59,130,246,.05)' },
@@ -209,7 +209,8 @@ export default function Dashboard() {
               key={card.name}
               onClick={() => {
                 if (card.name === 'Daily Quiz') router.push('/quiz');
-                else if (card.name === 'Wordle') router.push('/wordle');
+                else if (card.name === 'Guess the Movie') router.push('/daily-movie');
+                else if (card.name === 'Party Mode') router.push('/party');
               }}
               className="shrink-0 w-[180px] bg-cp-surface border border-cp-border rounded-[10px] p-5 cursor-pointer transition-all hover:border-white/15 hover:-translate-y-0.5 relative overflow-hidden"
             >

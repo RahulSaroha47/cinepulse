@@ -62,12 +62,12 @@ export default function WordlePage() {
     const token = localStorage.getItem('cp_token');
     if (!token) { router.push('/login'); return; }
 
-    fetch(`${API}/api/wordle/today`, { headers: authHeaders() })
+    fetch(`${API}/api/daily-movie/today`, { headers: authHeaders() })
       .then(r => r.json())
       .then(data => setStatus(data))
       .catch(() => setError('Failed to load today\'s Wordle.'));
 
-    fetch(`${API}/api/wordle/movies`, { headers: authHeaders() })
+    fetch(`${API}/api/daily-movie/movies`, { headers: authHeaders() })
       .then(r => r.json())
       .then(data => setAllMovies(data))
       .catch(() => {});
@@ -108,12 +108,12 @@ export default function WordlePage() {
     setIsSubmitting(true);
     setError('');
     try {
-      const r = await fetch(`${API}/api/wordle/guess`, {
+      const r = await fetch(`${API}/api/daily-movie/guess`, {
         method: 'POST',
         headers: authHeaders(),
         body: JSON.stringify({ guess }),
       });
-      if (r.status === 409) { setError('Already completed today\'s Wordle.'); return; }
+      if (r.status === 409) { setError('Already completed today\'s game.'); return; }
       if (!r.ok) { setError('Something went wrong. Try again.'); return; }
       const result: GuessResponse = await r.json();
       setStatus(prev => {
@@ -144,7 +144,7 @@ export default function WordlePage() {
     return (
       <div className="h-screen bg-cp-bg flex items-center justify-center">
         <div className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
-          Loading today's Wordle...
+          Loading today's game...
         </div>
       </div>
     );
@@ -197,7 +197,7 @@ export default function WordlePage() {
           ← Back
         </button>
         <div className="font-heading text-[1.3rem] tracking-[.1em]">
-          CINE<span className="text-cp-gold">WORDLE</span>
+          GUESS THE <span className="text-cp-gold">MOVIE</span>
         </div>
         <div className="ml-auto flex items-center gap-4">
           <span className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted">{status.date}</span>

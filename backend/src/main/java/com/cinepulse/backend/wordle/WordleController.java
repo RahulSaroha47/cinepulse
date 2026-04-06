@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/wordle")
+@RequestMapping("/api/daily-movie")
 @RequiredArgsConstructor
 public class WordleController {
 

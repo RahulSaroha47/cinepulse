@@ -34,8 +34,9 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers("/api/wordle/movies").permitAll()
+                        .requestMatchers("/api/daily-movie/movies").permitAll()
                         .requestMatchers("/api/quiz/**").authenticated()
+                        .requestMatchers("/api/party/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
