@@ -35,8 +35,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/daily-movie/movies").permitAll()
+                        .requestMatchers("/api/movies/posters").permitAll()
                         .requestMatchers("/api/quiz/**").authenticated()
                         .requestMatchers("/api/party/**").authenticated()
+                        .requestMatchers("/api/jigsaw/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

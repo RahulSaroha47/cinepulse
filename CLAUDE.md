@@ -252,18 +252,20 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - Timer counts down — faster solve = more points
 - Game ends when all tiles are correctly placed or time runs out
 
-### Scoring (TBD)
-- Base: time remaining × multiplier
-- Difficulty tiers: 3×3 easy, 4×4 hard
+### Scoring
+- 4×4 grid, 120 second limit
+- Score = timeRemaining × 10 (max 1,200 pts)
+- Timer stops when all 16 tiles are in correct positions, or runs out
 
-### API (planned)
-- `GET /api/jigsaw/today` → movie posterPath + tile order for today
-- `POST /api/jigsaw/submit` → time taken → score
+### API
+- `GET /api/jigsaw/today` → `{ posterPath, tileOrder (16 shuffled indices), timeLimit, completed, score, movie }`
+- `POST /api/jigsaw/submit` → `{ timeTaken }` → `{ score, timeTaken, timeLimit, movie }`
 
 ### Notes
-- Tile scrambling must be deterministic (date-seeded) so all users get the same shuffle
-- No backend needed for tile movement — all drag/drop is client-side
-- Only submit final solve time to backend
+- Tile scrambling is deterministic (date-seeded + offset from wordle seed) — same shuffle for all users
+- All drag/drop is client-side (HTML5 drag API); only final solve time submitted to backend
+- `tileOrder[slotIndex]` = which tile index is at that slot in the scrambled layout
+- Correct solution: `tileOrder[i] === i` for all i
 
 ## Database Tables
 | Table | Written by |
@@ -278,6 +280,8 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 | quiz_attempts | POST /api/quiz/submit |
 | daily_wordles | WordleService on first GET /daily-movie/today of the day |
 | wordle_attempts | POST /api/daily-movie/guess |
+| daily_jigsaws | JigsawService on first GET /api/jigsaw/today of the day |
+| jigsaw_attempts | POST /api/jigsaw/submit |
 
 ## TMDB Integration
 - API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
@@ -292,12 +296,14 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 1. **Daily Quiz** — ✅ done
 2. **Guess the Movie** — ✅ done (scoring/streak TBD); frontend route `/daily-movie`, API `/api/daily-movie/**`
 3. **Party Mode** — ✅ done; 2–6 players, 8 question types, turn-based, scoring = timeLeft × 3
-4. **Poster Jigsaw Puzzle** — scrambled movie poster tiles, reassemble in limited time; standalone game
-5. **AI Movie Recommender** — Claude API
-6. **Reviews + AI Summary** — Claude API
-7. **Leaderboard** — Redis sorted sets
-8. **Watchlist + Follow/Feed**
-9. **Movie Pages** — TMDB API
+4. **Poster Jigsaw Puzzle** — ✅ done; 4×4 grid, 90s timer, score = timeRemaining × 10, route `/jigsaw`, API `/api/jigsaw/**`
+5. **Leaderboard** — Redis sorted sets
+6. **Watchlist + Follow/Feed**
+7. **Movie Pages** — TMDB API
+8. **Reviews** — user-written, no AI
+9. ~~AI Movie Recommender~~ — skipped
+10. ~~Who Said It? game~~ — removed
+11. ~~AI Reviews Summary~~ — skipped
 
 ## Build Status
 - [x] JWT auth — signup/login backend complete
@@ -311,5 +317,5 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - [x] Guess the Movie — progressive clue reveal, 6 guesses, blurred bg, game over reveal (route: /daily-movie)
 - [x] Party Mode — 2–6 players, 8 question types, 3/5/7 rounds, turn-based, timeLeft × 3 scoring
 - [ ] Guess the Movie scoring + streak — **TODO, to be decided**
-- [ ] Poster Jigsaw Puzzle — **next up**
+- [x] Poster Jigsaw Puzzle — 4×4 drag-drop, 120s timer, date-seeded shuffle, score = timeRemaining × 10
 - [ ] Leaderboard — Redis sorted sets
