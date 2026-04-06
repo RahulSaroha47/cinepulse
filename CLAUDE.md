@@ -2,7 +2,7 @@
 
 ## Project
 Movie lover's social platform. Solo project by Rahul Saroha.
-**Focus: Bollywood (Hindi movies only)** — quiz, wordle, and all game data is Bollywood-only.
+**Focus: Bollywood (Hindi movies only)** — quiz, guess-the-movie, party mode, and all game data is Bollywood-only.
 
 ## Stack
 - **Frontend:** Next.js 16.2.2 (App Router) + Tailwind CSS v4 — `/frontend`
@@ -61,8 +61,10 @@ app/
     page.tsx                  — full dashboard: navbar, stats, featured hero, games, watchlist, leaderboard
   quiz/
     page.tsx                  — full quiz flow: intro → 5 questions → result breakdown
-  wordle/
+  daily-movie/
     page.tsx                  — fixed-height two-column layout: clues (left) + guesses/input (right)
+  party/
+    page.tsx                  — local multiplayer: setup → handoff → question → result → roundboard → endgame
 ```
 
 ## Backend Structure
@@ -91,7 +93,9 @@ com.cinepulse.backend/
     TmdbMovieDetails          — DTO for /movie/{id}?append_to_response=credits (enrichment)
     TmdbPageResponse          — DTO for TMDB paginated response
   quiz/
-    QuestionType (enum)       — POSTER_BLIND, WHO_SAID_IT, DIRECTORS_CUT, RELEASE_YEAR
+    QuestionType (enum)       — POSTER_BLIND, WHO_SAID_IT, DIRECTORS_CUT, RELEASE_YEAR,
+                                 TAGLINE_GUESS, DIRECTOR_OF_MOVIE, ACTOR_SPOTLIGHT, FILMOGRAPHY_LINK
+                                 (first 4 used in daily quiz; all 8 used in party mode)
     QuizQuestion (entity)     — type, questionText, posterPath, optionsJson, correctAnswer
     DailyQuiz (entity)        — quizDate (unique), questions (@ManyToMany), theme, themePosterPath
     QuizAttempt (entity)      — user, quizDate, answersJson, score, completedAt
@@ -107,10 +111,15 @@ com.cinepulse.backend/
                                  unique constraint: (user_id, wordle_date)
     DailyWordleRepository
     WordleAttemptRepository
-    WordleService             — lazy daily wordle generation (date-seeded random), clue logic, guess validation
-    WordleController          — GET /api/wordle/today, POST /api/wordle/guess, GET /api/wordle/movies
+    WordleService             — lazy daily game generation (date-seeded random), clue logic, guess validation
+    WordleController          — GET /api/daily-movie/today, POST /api/daily-movie/guess, GET /api/daily-movie/movies
     dto/                      — ClueDto, WordleStatusResponse, GuessRequest, GuessResponse,
                                  MovieRevealDto, MovieTitleDto
+  party/
+    PartyService              — generates N questions on-the-fly (no DB writes), 8 question types,
+                                 per-type non-repeating shuffled pools
+    PartyController           — GET /api/party/questions?count=N (authenticated)
+    dto/                      — PartyQuestionDto (includes correctAnswer — local game, client-side scoring)
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
@@ -196,23 +205,23 @@ DELETE FROM daily_quizzes;
 - Autocomplete dropdown uses **fuse.js** (fuzzy search, threshold 0.25) + exact substring match
 - If user selects from dropdown → that exact DB title is submitted
 - If user types freely without selecting → raw typed text submitted as-is
-- `/api/wordle/movies` is **public** (no auth required) — permitted in SecurityConfig
+- `/api/daily-movie/movies` is **public** (no auth required) — permitted in SecurityConfig
 
-### Wordle Scoring / Streak
-⚠️ **TODO — not yet decided.** Scoring and streak logic for Wordle will be designed separately.
+### Guess the Movie Scoring / Streak
+⚠️ **TODO — not yet decided.** Scoring and streak logic will be designed separately.
 
-### Wordle API
-- `GET /api/wordle/today` → clues unlocked so far + guess history + backgroundPosterPath (always set, used for blurred bg)
-- `POST /api/wordle/guess` → `{ guess: string }` → correct/wrong + nextClue if unlocked + movie reveal on game over
-- `GET /api/wordle/movies` → all movie titles for autocomplete (public, no auth)
+### Guess the Movie API
+- `GET /api/daily-movie/today` → clues unlocked so far + guess history + backgroundPosterPath (always set, used for blurred bg)
+- `POST /api/daily-movie/guess` → `{ guess: string }` → correct/wrong + nextClue if unlocked + movie reveal on game over
+- `GET /api/daily-movie/movies` → all movie titles for autocomplete (public, no auth)
 
-### Daily Wordle Generation (lazy)
-Generated on first `GET /api/wordle/today` of the day. Date used as random seed — deterministic, same movie for all users/servers. Picks only from movies with all enrichment fields populated.
+### Daily Game Generation (lazy)
+Generated on first `GET /api/daily-movie/today` of the day. Date used as random seed — deterministic, same movie for all users/servers. Picks only from movies with all enrichment fields populated.
 
 ### Replay Prevention
 `wordle_attempts` has unique constraint on `(user_id, wordle_date)`.
 
-### Dev: Reset today's wordle
+### Dev: Reset today's game
 ```sql
 DELETE FROM wordle_attempts;
 DELETE FROM daily_wordles;
@@ -231,6 +240,31 @@ DELETE FROM director_entries;
 DELETE FROM movies;
 ```
 
+## Poster Jigsaw Puzzle System
+
+### Concept
+A scrambled movie poster puzzle — tiles are shuffled and the user drags them back into correct positions within a time limit. One Bollywood movie per day, same for all users.
+
+### How to Play
+- Poster is divided into a grid of tiles (e.g. 3×3 or 4×4)
+- Tiles are randomly shuffled at game start
+- User drags and drops tiles into the correct positions
+- Timer counts down — faster solve = more points
+- Game ends when all tiles are correctly placed or time runs out
+
+### Scoring (TBD)
+- Base: time remaining × multiplier
+- Difficulty tiers: 3×3 easy, 4×4 hard
+
+### API (planned)
+- `GET /api/jigsaw/today` → movie posterPath + tile order for today
+- `POST /api/jigsaw/submit` → time taken → score
+
+### Notes
+- Tile scrambling must be deterministic (date-seeded) so all users get the same shuffle
+- No backend needed for tile movement — all drag/drop is client-side
+- Only submit final solve time to backend
+
 ## Database Tables
 | Table | Written by |
 |---|---|
@@ -242,8 +276,8 @@ DELETE FROM movies;
 | daily_quizzes | QuizService on first GET /quiz/today of the day |
 | daily_quiz_questions | Hibernate join table for DailyQuiz ↔ QuizQuestion |
 | quiz_attempts | POST /api/quiz/submit |
-| daily_wordles | WordleService on first GET /wordle/today of the day |
-| wordle_attempts | POST /api/wordle/guess |
+| daily_wordles | WordleService on first GET /daily-movie/today of the day |
+| wordle_attempts | POST /api/daily-movie/guess |
 
 ## TMDB Integration
 - API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
@@ -256,13 +290,13 @@ DELETE FROM movies;
 
 ## Feature Roadmap
 1. **Daily Quiz** — ✅ done
-2. **CinePulse Wordle** — ✅ done (scoring/streak TBD)
-3. **Party Mode** — local multiplayer, turn-based bowling style, speed scoring
-4. **AI Movie Recommender** — Claude API
-5. **Reviews + AI Summary** — Claude API
-6. **Leaderboard** — Redis sorted sets
-7. **Watchlist + Follow/Feed**
-8. **Who Said It?** — dialogue guessing game
+2. **Guess the Movie** — ✅ done (scoring/streak TBD); frontend route `/daily-movie`, API `/api/daily-movie/**`
+3. **Party Mode** — ✅ done; 2–6 players, 8 question types, turn-based, scoring = timeLeft × 3
+4. **Poster Jigsaw Puzzle** — scrambled movie poster tiles, reassemble in limited time; standalone game
+5. **AI Movie Recommender** — Claude API
+6. **Reviews + AI Summary** — Claude API
+7. **Leaderboard** — Redis sorted sets
+8. **Watchlist + Follow/Feed**
 9. **Movie Pages** — TMDB API
 
 ## Build Status
@@ -274,6 +308,8 @@ DELETE FROM movies;
 - [x] TMDB integration — Bollywood movie seeder (~160 movies) + enrichment (genre, director, cast, tagline)
 - [x] Daily Quiz — all 4 question types, scoring, streak tracking, result breakdown
 - [x] Dashboard stats — wired from real DB (`/api/users/me/stats`)
-- [x] CinePulse Wordle — progressive clue reveal, 6 guesses, blurred bg, game over reveal
-- [ ] Wordle scoring + streak — **TODO, to be decided**
+- [x] Guess the Movie — progressive clue reveal, 6 guesses, blurred bg, game over reveal (route: /daily-movie)
+- [x] Party Mode — 2–6 players, 8 question types, 3/5/7 rounds, turn-based, timeLeft × 3 scoring
+- [ ] Guess the Movie scoring + streak — **TODO, to be decided**
+- [ ] Poster Jigsaw Puzzle — **next up**
 - [ ] Leaderboard — Redis sorted sets
