@@ -39,6 +39,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/daily-movie/movies").permitAll()
                         .requestMatchers("/api/movies/posters").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/movies/top-rated").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/movies/*/reviews").permitAll()
                         .requestMatchers("/api/quiz/**").authenticated()

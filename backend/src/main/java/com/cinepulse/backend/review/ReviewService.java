@@ -5,7 +5,9 @@ import com.cinepulse.backend.movie.MovieDetailDto;
 import com.cinepulse.backend.movie.MovieRepository;
 import com.cinepulse.backend.movie.MovieSummaryDto;
 import com.cinepulse.backend.user.User;
+import com.cinepulse.backend.movie.TopRatedMovieDto;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -48,6 +50,23 @@ public class ReviewService {
                 avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0,
                 count, reviewed
         );
+    }
+
+    // ── Top rated ─────────────────────────────────────────────────
+
+    public List<TopRatedMovieDto> getTopRated() {
+        return reviewRepository.findTopRatedMovies(PageRequest.of(0, 10)).stream()
+                .map(m -> {
+                    Double avg = reviewRepository.findAvgRatingByMovie(m);
+                    long count = reviewRepository.countByMovie(m);
+                    return new TopRatedMovieDto(
+                            m.getId(), m.getTitle(), m.getPosterPath(), m.getReleaseYear(),
+                            m.getGenre(), m.getDirector(), m.getOverview(),
+                            avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0,
+                            count
+                    );
+                })
+                .collect(Collectors.toList());
     }
 
     // ── Reviews ───────────────────────────────────────────────────

@@ -41,6 +41,12 @@ public class MovieController {
         return ResponseEntity.ok(reviewService.getAllMovies());
     }
 
+    // ── Top 10 rated (public) ─────────────────────────────────────
+    @GetMapping("/top-rated")
+    public ResponseEntity<List<TopRatedMovieDto>> getTopRated() {
+        return ResponseEntity.ok(reviewService.getTopRated());
+    }
+
     // ── Movie detail (public, but userReviewed needs auth) ────────
     @GetMapping("/{id}")
     public ResponseEntity<MovieDetailDto> getMovie(
