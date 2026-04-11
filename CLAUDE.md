@@ -184,7 +184,7 @@ No streak multiplier. Daily max across all games ≈ 97 pts.
 - Per-game daily Redis sorted sets: `lb:quiz:{date}`, `lb:wordle:{date}`, `lb:jigsaw:{date}` (TTL 2 days)
 - Overall all-time Redis sorted set: `lb:overall` (score = user's cumulative totalScore)
 - Per-game leaderboard shown on result screen after playing (top 7 + player's rank highlighted)
-- Overall leaderboard on dashboard (placeholder data — wire to `GET /api/leaderboard` when ready)
+- Overall leaderboard on dashboard — wired to `GET /api/leaderboard`; shows top 7 + player rank (highlighted inline if in top 7, below `···` separator if outside)
 - `GET /api/quiz/leaderboard`, `GET /api/daily-movie/leaderboard`, `GET /api/jigsaw/leaderboard` — authenticated
 - `GET /api/leaderboard` — overall, authenticated
 
@@ -358,7 +358,7 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - [x] Party Mode — 2–6 players, 8 question types, 3/5/7 rounds, turn-based, timeLeft × 3 scoring
 - [x] Poster Jigsaw Puzzle — 3×3 drag-drop, 45s timer, date-seeded shuffle, score = timeRemaining × 1, jigsaw streak
 - [x] Scoring + Streak system — per-game independent streaks + overall streak, all update totalScore
-- [x] Leaderboard — Redis sorted sets; per-game daily top 7 shown on result screens; overall on dashboard (placeholder data — wire to /api/leaderboard)
+- [x] Leaderboard — Redis sorted sets; per-game daily top 7 on result screens; overall dashboard leaderboard wired to /api/leaderboard
 - [ ] Watchlist + Follow/Feed
 - [ ] Movie Pages
 - [ ] Reviews
