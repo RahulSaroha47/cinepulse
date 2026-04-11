@@ -37,9 +37,7 @@ export default function Dashboard() {
   const [jigsawStatus, setJigsawStatus] = useState<JigsawStatus | null>(null);
   const [wordleStatus, setWordleStatus] = useState<WordleStatus | null>(null);
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
-  type PosterItem = { id: number; posterPath: string };
   type TopMovie = { id: number; title: string; posterPath: string; releaseYear: number; genre: string; director: string; overview: string; avgRating: number; reviewCount: number };
-  const [posters, setPosters] = useState<PosterItem[]>([]);
   const [topRated, setTopRated] = useState<TopMovie[]>([]);
 
   useEffect(() => {
@@ -78,11 +76,6 @@ export default function Dashboard() {
     fetch('http://localhost:8080/api/daily-movie/today', { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setWordleStatus(data); })
-      .catch(() => {});
-
-    fetch('http://localhost:8080/api/movies/posters')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setPosters(data))
       .catch(() => {});
 
     fetch('http://localhost:8080/api/movies/top-rated')
@@ -248,7 +241,7 @@ export default function Dashboard() {
         {topRated.length > 0 && (
           <div className="mb-10">
             <div className="flex items-baseline justify-between mb-4">
-              <span className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">🏆 Top 10 Rated</span>
+              <h2 className="font-heading text-[1.6rem] tracking-[.06em] text-cp-text">🏆 Top 10 Rated on CinePulse</h2>
               <span
                 className="font-code text-[9px] tracking-[.1em] uppercase text-cp-red cursor-pointer hover:underline"
                 onClick={() => router.push('/movies')}
@@ -265,39 +258,40 @@ export default function Dashboard() {
                   onClick={() => router.push(`/movies/${m.id}`)}
                   className="relative flex gap-4 bg-cp-surface border border-cp-border rounded-[12px] overflow-hidden cursor-pointer group transition-all hover:-translate-y-0.5 hover:border-white/15"
                 >
-                  {/* Rank */}
+                  {/* Rank — top-right of the whole card */}
                   <div
-                    className="absolute top-3 left-3 font-heading text-[2.5rem] leading-none z-10 select-none"
-                    style={{ color: i === 0 ? '#f4c430' : i === 1 ? 'rgba(255,255,255,.35)' : 'rgba(255,255,255,.2)' }}
+                    className="absolute top-3 right-3 font-heading text-[2rem] leading-none z-10 select-none"
+                    style={{ color: i === 0 ? '#f4c430' : 'rgba(255,255,255,.5)', textShadow: '0 1px 6px rgba(0,0,0,.9)' }}
                   >
                     #{i + 1}
                   </div>
                   {/* Poster */}
-                  <div className="shrink-0 w-[110px]">
+                  <div className="shrink-0 w-[150px]">
                     {m.posterPath ? (
                       <img
                         src={`${TMDB_IMG}${m.posterPath}`}
                         alt={m.title}
                         className="w-full h-full object-cover transition-all duration-300 group-hover:brightness-110"
-                        style={{ filter: 'saturate(.85)', minHeight: 160 }}
+                        style={{ filter: 'saturate(.85)', minHeight: 220 }}
                       />
                     ) : (
-                      <div className="w-full h-[160px] bg-cp-border" />
+                      <div className="w-full h-[220px] bg-cp-border" />
                     )}
                   </div>
                   {/* Info */}
-                  <div className="flex flex-col justify-center py-4 pr-4 pt-10">
-                    <div className="font-heading text-[.85rem] tracking-[.04em] leading-tight mb-[4px]">{m.title}</div>
-                    <div className="font-code text-[9px] text-cp-muted mb-[6px]">
+                  <div className="flex flex-col justify-center py-5 pr-10">
+                    <div className="font-heading text-[1rem] tracking-[.04em] leading-tight mb-[6px]">{m.title}</div>
+                    <div className="font-code text-[10px] text-cp-muted mb-[8px]">
                       {m.releaseYear}{m.genre ? ` · ${m.genre.split(',')[0].trim()}` : ''}
                     </div>
-                    <div className="flex items-center gap-[6px] mb-[8px]">
-                      <span style={{ color: '#f4c430', fontSize: 11 }}>{'★'.repeat(Math.round(m.avgRating))}{'☆'.repeat(5 - Math.round(m.avgRating))}</span>
-                      <span className="font-heading text-[.8rem]" style={{ color: '#f4c430' }}>{m.avgRating.toFixed(1)}</span>
-                      <span className="font-code text-[9px] text-cp-muted">({m.reviewCount})</span>
+                    <div className="flex items-center gap-[6px] mb-[10px]">
+                      <span style={{ color: '#f4c430', fontSize: 13 }}>{'★'.repeat(Math.round(m.avgRating))}{'☆'.repeat(5 - Math.round(m.avgRating))}</span>
+                      <span className="font-heading text-[.95rem]" style={{ color: '#f4c430' }}>{m.avgRating.toFixed(1)}</span>
+                      <span className="font-code text-[10px] text-cp-muted">({m.reviewCount})</span>
                     </div>
                     {m.overview && (
-                      <p className="font-body text-[13px] text-cp-muted leading-snug" style={{
+                      <p className="font-body text-[14px] leading-snug" style={{
+                        color: 'rgba(241,240,251,.75)',
                         display: '-webkit-box', WebkitLineClamp: 3,
                         WebkitBoxOrient: 'vertical', overflow: 'hidden',
                       }}>
@@ -305,7 +299,7 @@ export default function Dashboard() {
                       </p>
                     )}
                     {m.director && (
-                      <div className="font-code text-[9px] text-cp-muted mt-[6px]">Dir. {m.director}</div>
+                      <div className="font-code text-[10px] text-cp-muted mt-[8px]">Dir. {m.director}</div>
                     )}
                   </div>
                 </div>
@@ -322,23 +316,23 @@ export default function Dashboard() {
                     className="cursor-pointer group"
                   >
                     <div className="relative rounded-[8px] overflow-hidden border border-cp-border mb-2 transition-all group-hover:border-white/20 group-hover:-translate-y-0.5">
-                      <div className="absolute top-2 left-2 font-heading text-[1.1rem] leading-none z-10 select-none" style={{ color: 'rgba(255,255,255,.3)' }}>
+                      <div className="absolute top-2 right-2 font-heading text-[1.3rem] leading-none z-10 select-none" style={{ color: '#fff', textShadow: '0 1px 4px rgba(0,0,0,.9)' }}>
                         #{i + 4}
                       </div>
                       {m.posterPath ? (
                         <img
                           src={`${TMDB_IMG}${m.posterPath}`}
                           alt={m.title}
-                          className="w-full h-[120px] object-cover block transition-all duration-300 group-hover:brightness-110"
+                          className="w-full h-[160px] object-cover block transition-all duration-300 group-hover:brightness-110"
                           style={{ filter: 'saturate(.8)' }}
                         />
                       ) : (
-                        <div className="w-full h-[120px] bg-cp-border" />
+                        <div className="w-full h-[160px] bg-cp-border" />
                       )}
                       <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(8,8,15,.8) 0%, transparent 50%)' }} />
                     </div>
-                    <div className="font-heading text-[10px] tracking-[.04em] leading-tight truncate">{m.title}</div>
-                    <div className="font-code text-[9px] mt-[2px]" style={{ color: '#f4c430' }}>
+                    <div className="font-heading text-[13px] tracking-[.04em] leading-tight truncate">{m.title}</div>
+                    <div className="font-code text-[13px] mt-[3px]" style={{ color: '#f4c430' }}>
                       ★ {m.avgRating.toFixed(1)}
                     </div>
                   </div>
@@ -348,7 +342,7 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* ── LEADERBOARD + POSTER GRID ── */}
+        {/* ── LEADERBOARD ── */}
         <div className="grid grid-cols-[380px_1fr] gap-6">
 
           {/* LEADERBOARD */}
@@ -424,29 +418,6 @@ export default function Dashboard() {
                   )}
                 </>
               )}
-            </div>
-          </div>
-
-          {/* BOLLYWOOD POSTER GRID */}
-          <div>
-            <div className="mb-4">
-              <span className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">🎬 Bollywood Cinema</span>
-            </div>
-            <div className="grid grid-cols-5 gap-2">
-              {posters.slice(0, 10).map((p) => (
-                <div
-                  key={p.id}
-                  className="rounded-[8px] overflow-hidden border border-cp-border group/p cursor-pointer"
-                  onClick={() => router.push(`/movies/${p.id}`)}
-                >
-                  <img
-                    src={`${TMDB_IMG}${p.posterPath}`}
-                    alt="poster"
-                    className="w-full h-[130px] object-cover block transition-all duration-300 group-hover/p:scale-105 group-hover/p:brightness-110"
-                    style={{ filter: 'saturate(.85)' }}
-                  />
-                </div>
-              ))}
             </div>
           </div>
 
