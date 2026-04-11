@@ -37,7 +37,8 @@ export default function Dashboard() {
   const [jigsawStatus, setJigsawStatus] = useState<JigsawStatus | null>(null);
   const [wordleStatus, setWordleStatus] = useState<WordleStatus | null>(null);
   const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
-  const [posters, setPosters] = useState<string[]>([]);
+  type PosterItem = { id: number; posterPath: string };
+  const [posters, setPosters] = useState<PosterItem[]>([]);
 
   useEffect(() => {
     const raw = localStorage.getItem('cp_user');
@@ -99,6 +100,13 @@ export default function Dashboard() {
         <div className="font-heading text-[1.3rem] tracking-[.1em] shrink-0">
           CINE<span className="text-cp-red">PULSE</span>
         </div>
+
+        <button
+          onClick={() => router.push('/movies')}
+          className="font-code text-[10px] tracking-[.12em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+        >
+          🎬 Films
+        </button>
 
         <div className="ml-auto flex items-center gap-4">
           <div
@@ -321,10 +329,14 @@ export default function Dashboard() {
               <span className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">🎬 Bollywood Cinema</span>
             </div>
             <div className="grid grid-cols-5 gap-2">
-              {posters.slice(0, 10).map((path, i) => (
-                <div key={i} className="rounded-[8px] overflow-hidden border border-cp-border group/p">
+              {posters.slice(0, 10).map((p) => (
+                <div
+                  key={p.id}
+                  className="rounded-[8px] overflow-hidden border border-cp-border group/p cursor-pointer"
+                  onClick={() => router.push(`/movies/${p.id}`)}
+                >
                   <img
-                    src={`${TMDB_IMG}${path}`}
+                    src={`${TMDB_IMG}${p.posterPath}`}
                     alt="poster"
                     className="w-full h-[130px] object-cover block transition-all duration-300 group-hover/p:scale-105 group-hover/p:brightness-110"
                     style={{ filter: 'saturate(.85)' }}

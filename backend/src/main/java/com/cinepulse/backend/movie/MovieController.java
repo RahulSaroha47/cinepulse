@@ -1,12 +1,18 @@
 package com.cinepulse.backend.movie;
 
+import com.cinepulse.backend.review.ReviewRequest;
+import com.cinepulse.backend.review.ReviewResponse;
+import com.cinepulse.backend.review.ReviewService;
+import com.cinepulse.backend.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -15,16 +21,46 @@ import java.util.stream.Collectors;
 public class MovieController {
 
     private final MovieRepository movieRepository;
+    private final ReviewService reviewService;
 
-    // Returns random Bollywood movie poster paths for the dashboard grid
+    // ── Dashboard poster grid (public) ────────────────────────────
     @GetMapping("/posters")
-    public ResponseEntity<List<String>> getRandomPosters() {
+    public ResponseEntity<List<Map<String, Object>>> getRandomPosters() {
         List<Movie> movies = new ArrayList<>(movieRepository.findAllByPosterPathIsNotNull());
         Collections.shuffle(movies);
-        List<String> posters = movies.stream()
-                .map(Movie::getPosterPath)
+        List<Map<String, Object>> result = movies.stream()
                 .limit(14)
+                .map(m -> Map.<String, Object>of("id", m.getId(), "posterPath", m.getPosterPath()))
                 .collect(Collectors.toList());
-        return ResponseEntity.ok(posters);
+        return ResponseEntity.ok(result);
+    }
+
+    // ── Browse all movies (public) ────────────────────────────────
+    @GetMapping
+    public ResponseEntity<List<MovieSummaryDto>> getAllMovies() {
+        return ResponseEntity.ok(reviewService.getAllMovies());
+    }
+
+    // ── Movie detail (public, but userReviewed needs auth) ────────
+    @GetMapping("/{id}")
+    public ResponseEntity<MovieDetailDto> getMovie(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(reviewService.getMovieDetail(id, user));
+    }
+
+    // ── Reviews for a movie (public) ─────────────────────────────
+    @GetMapping("/{id}/reviews")
+    public ResponseEntity<List<ReviewResponse>> getReviews(@PathVariable Long id) {
+        return ResponseEntity.ok(reviewService.getReviews(id));
+    }
+
+    // ── Submit a review (authenticated) ──────────────────────────
+    @PostMapping("/{id}/reviews")
+    public ResponseEntity<ReviewResponse> addReview(
+            @PathVariable Long id,
+            @AuthenticationPrincipal User user,
+            @RequestBody ReviewRequest req) {
+        return ResponseEntity.ok(reviewService.addReview(user, id, req));
     }
 }
