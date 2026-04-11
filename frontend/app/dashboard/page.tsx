@@ -13,11 +13,6 @@ const GAME_CARDS = [
   { icon: '⭐', name: 'Reviews',         sub: 'Rate & review films',   badge: 'soon', glow: 'rgba(244,196,48,.04)', route: null },
 ];
 
-const LEADERBOARD = [
-  { rank: '1', rankClass: 'text-cp-gold',   name: 'CineKing',  streak: 28, score: '9,840', avatar: 'https://i.pravatar.cc/30?img=1' },
-  { rank: '2', rankClass: 'text-gray-400',  name: 'FilmFreak', streak: 15, score: '9,210', avatar: 'https://i.pravatar.cc/30?img=5' },
-  { rank: '3', rankClass: 'text-[#b45309]', name: 'ReelQueen', streak: 9,  score: '8,990', avatar: 'https://i.pravatar.cc/30?img=8' },
-];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -37,8 +32,11 @@ export default function Dashboard() {
   const [quizHero, setQuizHero] = useState<QuizHero | null>(null);
   type JigsawStatus = { completed: boolean; score: number };
   type WordleStatus = { solved: boolean; failed: boolean };
+  type LbEntry = { rank: number; username: string; score: number };
+  type Leaderboard = { top7: LbEntry[]; playerRank: LbEntry | null };
   const [jigsawStatus, setJigsawStatus] = useState<JigsawStatus | null>(null);
   const [wordleStatus, setWordleStatus] = useState<WordleStatus | null>(null);
+  const [leaderboard, setLeaderboard] = useState<Leaderboard | null>(null);
   const [posters, setPosters] = useState<string[]>([]);
 
   useEffect(() => {
@@ -82,6 +80,11 @@ export default function Dashboard() {
     fetch('http://localhost:8080/api/movies/posters')
       .then(r => r.ok ? r.json() : [])
       .then(data => setPosters(data))
+      .catch(() => {});
+
+    fetch('http://localhost:8080/api/leaderboard', { headers })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setLeaderboard(data); })
       .catch(() => {});
   }, []);
 
@@ -242,34 +245,73 @@ export default function Dashboard() {
               <span className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">🏆 Leaderboard</span>
             </div>
             <div className="bg-cp-surface border border-cp-border rounded-[10px] p-5">
-              {LEADERBOARD.map((row) => (
-                <div key={row.name} className="flex items-center gap-3 py-[9px] border-b border-cp-border">
-                  <span className={`font-heading text-[.9rem] w-[22px] shrink-0 ${row.rankClass}`}>{row.rank}</span>
-                  <img src={row.avatar} alt={row.name} className="w-[30px] h-[30px] rounded-full object-cover shrink-0" />
-                  <div className="flex-1">
-                    <div className="font-body text-[.9rem] font-medium">{row.name}</div>
-                    <div className="font-code text-[9px] text-cp-muted mt-[1px]">🔥 {row.streak} streak</div>
-                  </div>
-                  <span className="font-code text-[11px] text-cp-gold">{row.score}</span>
-                </div>
-              ))}
-              <div
-                className="flex items-center gap-3 py-[9px] rounded-md -mx-1 px-1"
-                style={{ background: 'rgba(230,57,70,.06)' }}
-              >
-                <span className="font-heading text-[.9rem] w-[22px] shrink-0 text-cp-red">{stats ? `#${stats.rank}` : '—'}</span>
-                <div
-                  className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-heading text-[11px] shrink-0"
-                  style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
-                >
-                  {initials}
-                </div>
-                <div className="flex-1">
-                  <div className="font-body text-[.9rem] font-medium">{username || 'You'}</div>
-                  <div className="font-code text-[9px] text-cp-muted mt-[1px]">🔥 {stats ? `${stats.streak} streak` : '—'}</div>
-                </div>
-                <span className="font-code text-[11px] text-cp-gold">{stats ? stats.totalScore.toLocaleString() : '—'}</span>
-              </div>
+              {leaderboard && leaderboard.top7.length > 0 ? (
+                <>
+                  {leaderboard.top7.map((row) => {
+                    const rankColor = row.rank === 1 ? 'text-cp-gold' : row.rank === 2 ? 'text-gray-400' : row.rank === 3 ? 'text-[#b45309]' : 'text-cp-muted';
+                    const isPlayer = row.username === username.toLowerCase() || row.username === username;
+                    return (
+                      <div key={row.rank} className={`flex items-center gap-3 py-[9px] border-b border-cp-border ${isPlayer ? 'rounded-md -mx-1 px-1' : ''}`}
+                        style={isPlayer ? { background: 'rgba(230,57,70,.06)' } : {}}>
+                        <span className={`font-heading text-[.9rem] w-[22px] shrink-0 ${isPlayer ? 'text-cp-red' : rankColor}`}>#{row.rank}</span>
+                        <div
+                          className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-heading text-[11px] shrink-0"
+                          style={{ background: isPlayer ? 'linear-gradient(135deg, #e63946, #8b1c24)' : 'rgba(255,255,255,.08)' }}
+                        >
+                          {row.username.slice(0, 2).toUpperCase()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-body text-[.9rem] font-medium">{row.username}</div>
+                        </div>
+                        <span className="font-code text-[11px] text-cp-gold">{row.score.toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                  {leaderboard.playerRank && !leaderboard.top7.some(r => r.username === username.toLowerCase() || r.username === username) && (
+                    <>
+                      <div className="py-[6px] text-center font-code text-[9px] text-cp-muted tracking-widest">···</div>
+                      <div
+                        className="flex items-center gap-3 py-[9px] rounded-md -mx-1 px-1"
+                        style={{ background: 'rgba(230,57,70,.06)' }}
+                      >
+                        <span className="font-heading text-[.9rem] w-[22px] shrink-0 text-cp-red">#{leaderboard.playerRank.rank}</span>
+                        <div
+                          className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-heading text-[11px] shrink-0"
+                          style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
+                        >
+                          {initials}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-body text-[.9rem] font-medium">{username || 'You'}</div>
+                        </div>
+                        <span className="font-code text-[11px] text-cp-gold">{leaderboard.playerRank.score.toLocaleString()}</span>
+                      </div>
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div className="py-4 text-center font-code text-[11px] text-cp-muted">No scores yet — play a game!</div>
+                  {stats && stats.totalScore > 0 && (
+                    <div
+                      className="flex items-center gap-3 py-[9px] rounded-md -mx-1 px-1"
+                      style={{ background: 'rgba(230,57,70,.06)' }}
+                    >
+                      <span className="font-heading text-[.9rem] w-[22px] shrink-0 text-cp-red">{stats ? `#${stats.rank}` : '—'}</span>
+                      <div
+                        className="w-[30px] h-[30px] rounded-full flex items-center justify-center font-heading text-[11px] shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
+                      >
+                        {initials}
+                      </div>
+                      <div className="flex-1">
+                        <div className="font-body text-[.9rem] font-medium">{username || 'You'}</div>
+                      </div>
+                      <span className="font-code text-[11px] text-cp-gold">{stats ? stats.totalScore.toLocaleString() : '—'}</span>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
