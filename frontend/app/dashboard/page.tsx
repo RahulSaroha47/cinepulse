@@ -10,7 +10,7 @@ const GAME_CARDS = [
   { icon: '🟨', name: 'Guess the Movie', sub: "Guess today's film",    badge: 'live', glow: 'rgba(244,196,48,.06)', route: '/daily-movie' },
   { icon: '🧩', name: 'Poster Jigsaw',   sub: 'Reassemble the poster', badge: 'live', glow: 'rgba(99,102,241,.06)', route: '/jigsaw' },
   { icon: '🎳', name: 'Party Mode',      sub: 'Local multiplayer',     badge: 'live', glow: 'rgba(139,92,246,.06)', route: '/party' },
-  { icon: '⭐', name: 'Reviews',         sub: 'Rate & review films',   badge: 'soon', glow: 'rgba(244,196,48,.04)', route: null },
+  { icon: '⭐', name: 'Reviews',         sub: 'Rate & review films',   badge: 'live', glow: 'rgba(244,196,48,.04)', route: '/movies' },
 ];
 
 
@@ -100,13 +100,6 @@ export default function Dashboard() {
         <div className="font-heading text-[1.3rem] tracking-[.1em] shrink-0">
           CINE<span className="text-cp-red">PULSE</span>
         </div>
-
-        <button
-          onClick={() => router.push('/movies')}
-          className="font-code text-[10px] tracking-[.12em] uppercase text-cp-muted hover:text-cp-text transition-colors"
-        >
-          🎬 Films
-        </button>
 
         <div className="ml-auto flex items-center gap-4">
           <div
