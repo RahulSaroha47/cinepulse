@@ -224,7 +224,7 @@ export default function PartyPage() {
         >
           <button
             onClick={() => router.push('/dashboard')}
-            className="font-code text-[10px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+            className="font-code text-[13px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
           >
             ← Back
           </button>
@@ -244,7 +244,7 @@ export default function PartyPage() {
 
             {/* Players */}
             <div className="mb-8">
-              <div className="font-code text-[9px] tracking-[.18em] uppercase text-cp-muted mb-3">
+              <div className="font-code text-[14px] tracking-[.18em] uppercase text-cp-muted mb-3">
                 Players ({playerNames.length} / {MAX_PLAYERS})
               </div>
               <div className="space-y-2">
@@ -270,7 +270,7 @@ export default function PartyPage() {
                     {playerNames.length > 2 && (
                       <button
                         onClick={() => removePlayer(i)}
-                        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-code text-[11px] text-cp-muted hover:text-cp-red transition-colors"
+                        className="shrink-0 w-7 h-7 rounded-full flex items-center justify-center font-code text-[13px] text-cp-muted hover:text-cp-red transition-colors"
                         style={{ background: 'rgba(255,255,255,.05)' }}
                       >
                         ×
@@ -282,7 +282,7 @@ export default function PartyPage() {
               {playerNames.length < MAX_PLAYERS && (
                 <button
                   onClick={addPlayer}
-                  className="mt-3 font-code text-[10px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+                  className="mt-3 font-code text-[13px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
                 >
                   + Add player
                 </button>
@@ -291,7 +291,7 @@ export default function PartyPage() {
 
             {/* Rounds */}
             <div className="mb-10">
-              <div className="font-code text-[9px] tracking-[.18em] uppercase text-cp-muted mb-3">
+              <div className="font-code text-[14px] tracking-[.18em] uppercase text-cp-muted mb-3">
                 Rounds
               </div>
               <div className="flex gap-3">
@@ -299,7 +299,7 @@ export default function PartyPage() {
                   <button
                     key={r}
                     onClick={() => setRounds(r)}
-                    className="flex-1 py-3 rounded-[8px] font-code text-[12px] tracking-[.08em] transition-all"
+                    className="flex-1 py-3 rounded-[8px] font-code text-[14px] tracking-[.08em] transition-all"
                     style={{
                       background: rounds === r ? 'rgba(230,57,70,.15)' : 'rgba(255,255,255,.05)',
                       border: rounds === r ? '1px solid rgba(230,57,70,.5)' : '1px solid rgba(255,255,255,.1)',
@@ -310,7 +310,7 @@ export default function PartyPage() {
                   </button>
                 ))}
               </div>
-              <p className="font-code text-[9px] text-cp-muted mt-2">
+              <p className="font-code text-[14px] text-cp-muted mt-2">
                 {playerNames.filter(Boolean).length} players × {rounds} rounds = {playerNames.filter(Boolean).length * rounds} questions total
               </p>
             </div>
@@ -318,7 +318,7 @@ export default function PartyPage() {
             <button
               onClick={startGame}
               disabled={playerNames.some(n => !n.trim()) || playerNames.length < 2}
-              className="w-full py-4 rounded-[10px] font-code text-[12px] tracking-[.15em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+              className="w-full py-4 rounded-[10px] font-code text-[14px] tracking-[.15em] uppercase transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff', boxShadow: '0 4px 24px rgba(230,57,70,.35)' }}
             >
               Start Game →
@@ -333,7 +333,7 @@ export default function PartyPage() {
   if (screen === 'loading') {
     return (
       <div className="h-screen bg-cp-bg flex items-center justify-center">
-        <div className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
+        <div className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
           Loading questions...
         </div>
       </div>
@@ -344,7 +344,7 @@ export default function PartyPage() {
   if (screen === 'handoff' && currentPlayer) {
     return (
       <div className="h-screen bg-cp-bg flex flex-col items-center justify-center text-cp-text px-6">
-        <div className="font-code text-[9px] tracking-[.2em] uppercase text-cp-muted mb-4">
+        <div className="font-code text-[14px] tracking-[.2em] uppercase text-cp-muted mb-4">
           Round {currentRound} / {totalRounds}
         </div>
 
@@ -364,7 +364,7 @@ export default function PartyPage() {
         </h2>
         <p className="font-body text-cp-muted mb-10">It's your turn!</p>
 
-        <div className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted mb-3">
+        <div className="font-code text-[14px] tracking-[.12em] uppercase text-cp-muted mb-3">
           Current scores
         </div>
         <div className="flex gap-3 mb-10">
@@ -377,7 +377,7 @@ export default function PartyPage() {
                 border: i === currentPlayerIndex ? `1px solid ${playerColor(i, 0.4)}` : '1px solid rgba(255,255,255,.08)',
               }}
             >
-              <span className="font-code text-[9px] text-cp-muted truncate max-w-[70px]">{p.name}</span>
+              <span className="font-code text-[14px] text-cp-muted truncate max-w-[70px]">{p.name}</span>
               <span
                 className="font-heading text-[1.1rem]"
                 style={{ color: i === currentPlayerIndex ? playerColor(i, 1) : '#f1f0fb' }}
@@ -390,7 +390,7 @@ export default function PartyPage() {
 
         <button
           onClick={beginTurn}
-          className="px-10 py-4 rounded-[10px] font-code text-[12px] tracking-[.15em] uppercase transition-all"
+          className="px-10 py-4 rounded-[10px] font-code text-[14px] tracking-[.15em] uppercase transition-all"
           style={{ background: playerColor(currentPlayerIndex, 0.9), color: '#fff', boxShadow: `0 4px 24px ${playerColor(currentPlayerIndex, 0.4)}` }}
         >
           I'm Ready →
@@ -434,9 +434,9 @@ export default function PartyPage() {
             >
               {currentPlayerIndex + 1}
             </div>
-            <span className="font-code text-[11px] tracking-[.06em]">{currentPlayer.name}</span>
+            <span className="font-code text-[13px] tracking-[.06em]">{currentPlayer.name}</span>
           </div>
-          <div className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted">
+          <div className="font-code text-[14px] tracking-[.12em] uppercase text-cp-muted">
             Round {currentRound} / {totalRounds}
           </div>
           <div className="flex items-center gap-2">
@@ -446,7 +446,7 @@ export default function PartyPage() {
             >
               {timeLeft}
             </div>
-            <span className="font-code text-[9px] text-cp-muted">s</span>
+            <span className="font-code text-[14px] text-cp-muted">s</span>
           </div>
         </div>
 
@@ -480,7 +480,7 @@ export default function PartyPage() {
                 }}
               />
               <div
-                className="absolute inset-0 rounded-[10px] flex items-center justify-center font-code text-[9px] tracking-[.15em] uppercase text-white/40"
+                className="absolute inset-0 rounded-[10px] flex items-center justify-center font-code text-[14px] tracking-[.15em] uppercase text-white/40"
               >
                 Identify this film
               </div>
@@ -490,7 +490,7 @@ export default function PartyPage() {
           {/* Question */}
           <div className="max-w-lg w-full text-center mb-8">
             <div
-              className="font-code text-[9px] tracking-[.15em] uppercase mb-3 px-3 py-1 rounded-full inline-block"
+              className="font-code text-[14px] tracking-[.15em] uppercase mb-3 px-3 py-1 rounded-full inline-block"
               style={{ background: 'rgba(230,57,70,.1)', color: '#e63946', border: '1px solid rgba(230,57,70,.25)' }}
             >
               {questionTypeLabel(currentQuestion.type)}
@@ -518,7 +518,7 @@ export default function PartyPage() {
                 onMouseLeave={e => { if (!answered) e.currentTarget.style.background = 'rgba(255,255,255,.07)'; }}
               >
                 <span
-                  className="font-code text-[9px] mr-2 px-[6px] py-[2px] rounded-[3px]"
+                  className="font-code text-[14px] mr-2 px-[6px] py-[2px] rounded-[3px]"
                   style={{ background: 'rgba(255,255,255,.1)', color: '#6b7280' }}
                 >
                   {String.fromCharCode(65 + i)}
@@ -541,7 +541,7 @@ export default function PartyPage() {
 
         {/* Result badge */}
         <div
-          className="font-code text-[10px] tracking-[.2em] uppercase px-5 py-2 rounded-full mb-6"
+          className="font-code text-[13px] tracking-[.2em] uppercase px-5 py-2 rounded-full mb-6"
           style={{
             background: correct ? 'rgba(34,197,94,.12)' : 'rgba(230,57,70,.12)',
             border: `1px solid ${correct ? 'rgba(34,197,94,.4)' : 'rgba(230,57,70,.4)'}`,
@@ -558,14 +558,14 @@ export default function PartyPage() {
         >
           +{earnedPoints}
         </div>
-        <div className="font-code text-[9px] tracking-[.15em] uppercase text-cp-muted mb-8">
+        <div className="font-code text-[14px] tracking-[.15em] uppercase text-cp-muted mb-8">
           {correct ? `${timeLeft}s left × 3` : 'no points'}
         </div>
 
         {/* Correct answer (shown on wrong/timeout) */}
         {!correct && (
           <div className="mb-8 text-center">
-            <div className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted mb-1">The answer was</div>
+            <div className="font-code text-[14px] tracking-[.12em] uppercase text-cp-muted mb-1">The answer was</div>
             <div className="font-body text-[1.1rem] text-cp-gold">{currentQuestion.correctAnswer}</div>
           </div>
         )}
@@ -575,7 +575,7 @@ export default function PartyPage() {
           className="flex items-center gap-3 px-6 py-4 rounded-[10px] mb-10"
           style={{ background: playerColor(currentPlayerIndex, 0.1), border: `1px solid ${playerColor(currentPlayerIndex, 0.3)}` }}
         >
-          <span className="font-code text-[10px] tracking-[.08em] text-cp-muted">{currentPlayer.name}'s total</span>
+          <span className="font-code text-[13px] tracking-[.08em] text-cp-muted">{currentPlayer.name}'s total</span>
           <span className="font-heading text-[1.8rem]" style={{ color: playerColor(currentPlayerIndex, 1) }}>
             {players[currentPlayerIndex]?.total ?? 0}
           </span>
@@ -584,7 +584,7 @@ export default function PartyPage() {
         {/* Next */}
         <button
           onClick={advanceTurn}
-          className="px-10 py-4 rounded-[10px] font-code text-[12px] tracking-[.15em] uppercase transition-all"
+          className="px-10 py-4 rounded-[10px] font-code text-[14px] tracking-[.15em] uppercase transition-all"
           style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#f1f0fb' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,.1)')}
@@ -603,7 +603,7 @@ export default function PartyPage() {
   if (screen === 'roundboard') {
     return (
       <div className="h-screen bg-cp-bg flex flex-col items-center justify-center text-cp-text px-6">
-        <div className="font-code text-[9px] tracking-[.2em] uppercase text-cp-muted mb-2">
+        <div className="font-code text-[14px] tracking-[.2em] uppercase text-cp-muted mb-2">
           After round {currentRound - 1}
         </div>
         <h2 className="font-heading text-[2.4rem] tracking-[.04em] mb-8">Scoreboard</h2>
@@ -641,7 +641,7 @@ export default function PartyPage() {
 
         <button
           onClick={() => setScreen('handoff')}
-          className="px-10 py-4 rounded-[10px] font-code text-[12px] tracking-[.15em] uppercase"
+          className="px-10 py-4 rounded-[10px] font-code text-[14px] tracking-[.15em] uppercase"
           style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff', boxShadow: '0 4px 24px rgba(230,57,70,.35)' }}
         >
           Round {currentRound} →
@@ -657,7 +657,7 @@ export default function PartyPage() {
 
     return (
       <div className="h-screen bg-cp-bg flex flex-col items-center justify-center text-cp-text px-6">
-        <div className="font-code text-[9px] tracking-[.2em] uppercase text-cp-muted mb-4">Game Over</div>
+        <div className="font-code text-[14px] tracking-[.2em] uppercase text-cp-muted mb-4">Game Over</div>
 
         {/* Winner spotlight */}
         <div
@@ -671,7 +671,7 @@ export default function PartyPage() {
         >
           {winnerOrigIdx + 1}
         </div>
-        <div className="font-code text-[9px] tracking-[.18em] uppercase text-cp-gold mb-1">Winner</div>
+        <div className="font-code text-[14px] tracking-[.18em] uppercase text-cp-gold mb-1">Winner</div>
         <h2 className="font-heading text-[3rem] tracking-[.03em] mb-1">{winner?.name}</h2>
         <div className="font-heading text-[2rem] text-cp-gold mb-12">{winner?.total} pts</div>
 
@@ -703,14 +703,14 @@ export default function PartyPage() {
         <div className="flex gap-3">
           <button
             onClick={() => { setScreen('setup'); setPlayerNames(['', '']); setRounds(10); }}
-            className="px-7 py-3 rounded-[8px] font-code text-[11px] tracking-[.12em] uppercase"
+            className="px-7 py-3 rounded-[8px] font-code text-[13px] tracking-[.12em] uppercase"
             style={{ background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.15)', color: '#f1f0fb' }}
           >
             Play Again
           </button>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-7 py-3 rounded-[8px] font-code text-[11px] tracking-[.12em] uppercase"
+            className="px-7 py-3 rounded-[8px] font-code text-[13px] tracking-[.12em] uppercase"
             style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff', boxShadow: '0 4px 20px rgba(230,57,70,.3)' }}
           >
             Dashboard →

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import GameLeaderboard from '../components/GameLeaderboard';
 import { useRouter } from 'next/navigation';
 import Fuse from 'fuse.js';
 
@@ -45,6 +46,10 @@ export default function WordlePage() {
   const [error, setError] = useState('');
   const [newClueIndex, setNewClueIndex] = useState<number | null>(null);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [isReplay, setIsReplay] = useState(false);
+  const [replayGuesses, setReplayGuesses] = useState<string[]>([]);
+  const [replaySolved, setReplaySolved] = useState(false);
+  const [replayFailed, setReplayFailed] = useState(false);
 
   const fuse = useMemo(() => new Fuse(allMovies, {
     keys: ['title'],
@@ -98,9 +103,31 @@ export default function WordlePage() {
     inputRef.current?.focus();
   }
 
+  function handlePlayAgain() {
+    setIsReplay(true);
+    setReplayGuesses([]);
+    setReplaySolved(false);
+    setReplayFailed(false);
+    setInputValue('');
+    setSelectedMovie(null);
+    setError('');
+  }
+
   async function handleSubmit() {
     const guess = selectedMovie ? selectedMovie.title : inputValue.trim();
     if (!guess) return;
+
+    if (isReplay) {
+      const correct = status?.movie?.title.toLowerCase() === guess.toLowerCase();
+      const newGuesses = [...replayGuesses, guess];
+      setReplayGuesses(newGuesses);
+      if (correct) setReplaySolved(true);
+      else if (newGuesses.length >= MAX_GUESSES) setReplayFailed(true);
+      setInputValue('');
+      setSelectedMovie(null);
+      return;
+    }
+
     submitGuess(guess);
   }
 
@@ -143,19 +170,23 @@ export default function WordlePage() {
   if (!status) {
     return (
       <div className="h-screen bg-cp-bg flex items-center justify-center">
-        <div className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
+        <div className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
           Loading today's game...
         </div>
       </div>
     );
   }
 
-  const gameOver = status.solved || status.failed;
-  const attemptsLeft = MAX_GUESSES - status.guessCount;
+  const displayGuesses = isReplay ? replayGuesses : status.guesses;
+  const displaySolved = isReplay ? replaySolved : status.solved;
+  const displayFailed = isReplay ? replayFailed : status.failed;
+  const displayGuessCount = displayGuesses.length;
+  const gameOver = displaySolved || displayFailed;
+  const attemptsLeft = MAX_GUESSES - displayGuessCount;
 
   const guessSlots = Array.from({ length: MAX_GUESSES }, (_, i) => {
-    const guess = status.guesses[i];
-    const isCorrect = status.solved && i === status.guesses.length - 1;
+    const guess = displayGuesses[i];
+    const isCorrect = displaySolved && i === displayGuesses.length - 1;
     return { guess, isCorrect, isEmpty: !guess };
   });
 
@@ -192,7 +223,7 @@ export default function WordlePage() {
       >
         <button
           onClick={() => router.push('/dashboard')}
-          className="font-code text-[10px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+          className="font-code text-[13px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
         >
           ← Back
         </button>
@@ -200,10 +231,10 @@ export default function WordlePage() {
           GUESS THE <span className="text-cp-gold">MOVIE</span>
         </div>
         <div className="ml-auto flex items-center gap-4">
-          <span className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted">{status.date}</span>
+          <span className="font-code text-[12px] tracking-[.12em] uppercase text-cp-muted">{status.date}</span>
           {!gameOver && (
             <span
-              className="font-code text-[9px] tracking-[.08em] uppercase px-[8px] py-[3px] rounded-[3px]"
+              className="font-code text-[12px] tracking-[.08em] uppercase px-[8px] py-[3px] rounded-[3px]"
               style={{ background: 'rgba(244,196,48,.12)', color: '#f4c430', border: '1px solid rgba(244,196,48,.2)' }}
             >
               {attemptsLeft} / {MAX_GUESSES} left
@@ -221,14 +252,14 @@ export default function WordlePage() {
 
             {/* Status badge */}
             <div
-              className="font-code text-[10px] tracking-[.2em] uppercase px-4 py-2 rounded-full"
+              className="font-code text-[13px] tracking-[.2em] uppercase px-4 py-2 rounded-full"
               style={{
                 background: status.solved ? 'rgba(34,197,94,.15)' : 'rgba(230,57,70,.15)',
                 border: `1px solid ${status.solved ? 'rgba(34,197,94,.4)' : 'rgba(230,57,70,.4)'}`,
                 color: status.solved ? '#22c55e' : '#e63946',
               }}
             >
-              {status.solved ? `✓ Guessed in ${status.guessCount} ${status.guessCount === 1 ? 'try' : 'tries'}` : '✗ Better luck tomorrow'}
+              {displaySolved ? `✓ Guessed in ${displayGuessCount} ${displayGuessCount === 1 ? 'try' : 'tries'}${isReplay ? ' (replay)' : ''}` : isReplay ? '✗ Better luck next time' : '✗ Better luck tomorrow'}
             </div>
 
             {/* Poster + info side by side */}
@@ -250,7 +281,7 @@ export default function WordlePage() {
                 </div>
               )}
               <div className="flex flex-col justify-end pb-1">
-                <div className="font-code text-[9px] tracking-[.15em] uppercase text-cp-muted mb-2">
+                <div className="font-code text-[12px] tracking-[.15em] uppercase text-cp-muted mb-2">
                   {status.solved ? 'Today\'s movie was' : 'The answer was'}
                 </div>
                 <h2 className="font-heading text-[2.2rem] leading-none tracking-[.03em] mb-2">
@@ -258,7 +289,7 @@ export default function WordlePage() {
                 </h2>
                 {status.movie.releaseYear && (
                   <div
-                    className="font-code text-[11px] px-3 py-1 rounded-[4px] inline-block w-fit mb-4"
+                    className="font-code text-[13px] px-3 py-1 rounded-[4px] inline-block w-fit mb-4"
                     style={{ background: 'rgba(255,255,255,.08)', color: '#6b7280' }}
                   >
                     {status.movie.releaseYear}
@@ -270,7 +301,7 @@ export default function WordlePage() {
                   {guessSlots.map((slot, i) => (
                     <div
                       key={i}
-                      className="w-7 h-7 rounded-[4px] flex items-center justify-center font-code text-[9px]"
+                      className="w-7 h-7 rounded-[4px] flex items-center justify-center font-code text-[12px]"
                       style={{
                         background: slot.isEmpty
                           ? 'rgba(255,255,255,.05)'
@@ -290,15 +321,26 @@ export default function WordlePage() {
                   ))}
                 </div>
 
-                <button
-                  onClick={() => router.push('/dashboard')}
-                  className="font-code text-[10px] tracking-[.12em] uppercase px-5 py-[10px] rounded-[6px] transition-all w-fit"
-                  style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#f1f0fb', backdropFilter: 'blur(8px)' }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,.1)')}
-                >
-                  Back to Dashboard →
-                </button>
+                <GameLeaderboard endpoint="/api/daily-movie/leaderboard" />
+
+                <div className="flex gap-3 flex-wrap">
+                  <button
+                    onClick={handlePlayAgain}
+                    className="font-code text-[13px] tracking-[.12em] uppercase px-5 py-[10px] rounded-[6px] transition-all w-fit"
+                    style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff', boxShadow: '0 4px 20px rgba(230,57,70,.3)' }}
+                  >
+                    Play Again ↺
+                  </button>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="font-code text-[13px] tracking-[.12em] uppercase px-5 py-[10px] rounded-[6px] transition-all w-fit"
+                    style={{ background: 'rgba(255,255,255,.1)', border: '1px solid rgba(255,255,255,.15)', color: '#f1f0fb', backdropFilter: 'blur(8px)' }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,.18)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,.1)')}
+                  >
+                    Dashboard →
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -319,7 +361,7 @@ export default function WordlePage() {
               <p className="font-body text-sm text-cp-muted">Use the clues — {attemptsLeft} {attemptsLeft === 1 ? 'guess' : 'guesses'} remaining</p>
             </div>
 
-            <div className="font-code text-[9px] tracking-[.15em] uppercase text-cp-muted mb-3">
+            <div className="font-code text-[12px] tracking-[.15em] uppercase text-cp-muted mb-3">
               Clues unlocked · {status.clues.length} / 7
             </div>
 
@@ -335,7 +377,7 @@ export default function WordlePage() {
                   }}
                 >
                   <span
-                    className="font-code text-[8px] tracking-[.1em] uppercase shrink-0 mt-[3px] px-[7px] py-[3px] rounded-[3px]"
+                    className="font-code text-[13px] tracking-[.1em] uppercase shrink-0 mt-[3px] px-[7px] py-[3px] rounded-[3px]"
                     style={{ background: 'rgba(230,57,70,.15)', color: '#e63946', border: '1px solid rgba(230,57,70,.2)' }}
                   >
                     {clue.label}
@@ -352,12 +394,12 @@ export default function WordlePage() {
                   style={{ border: '1px dashed rgba(255,255,255,.07)', opacity: 0.5 }}
                 >
                   <span
-                    className="font-code text-[8px] tracking-[.1em] uppercase shrink-0 px-[7px] py-[3px] rounded-[3px]"
+                    className="font-code text-[13px] tracking-[.1em] uppercase shrink-0 px-[7px] py-[3px] rounded-[3px]"
                     style={{ background: 'rgba(255,255,255,.04)', color: '#6b7280' }}
                   >
                     locked
                   </span>
-                  <span className="font-code text-[9px] text-cp-muted">Make a wrong guess to unlock</span>
+                  <span className="font-code text-[12px] text-cp-muted">Make a wrong guess to unlock</span>
                 </div>
               ))}
             </div>
@@ -370,15 +412,15 @@ export default function WordlePage() {
           >
             {/* Guess slots */}
             <div className="flex-1 overflow-y-auto px-7 py-7">
-              <div className="font-code text-[9px] tracking-[.15em] uppercase text-cp-muted mb-4">
-                Guesses · {status.guessCount} / {MAX_GUESSES}
+              <div className="font-code text-[12px] tracking-[.15em] uppercase text-cp-muted mb-4">
+                Guesses · {displayGuessCount} / {MAX_GUESSES}
               </div>
 
               <div className="space-y-[6px]">
                 {guessSlots.map((slot, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 px-4 py-[11px] rounded-[7px] font-code text-[11px] transition-all"
+                    className="flex items-center gap-3 px-4 py-[11px] rounded-[7px] font-code text-[13px] transition-all"
                     style={{
                       background: slot.isEmpty
                         ? 'rgba(255,255,255,.03)'
@@ -393,7 +435,7 @@ export default function WordlePage() {
                     }}
                   >
                     <span
-                      className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] shrink-0 font-heading"
+                      className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[12px] shrink-0 font-heading"
                       style={{
                         background: slot.isEmpty ? 'rgba(255,255,255,.06)' : slot.isCorrect ? 'rgba(34,197,94,.25)' : 'rgba(230,57,70,.2)',
                         color: slot.isEmpty ? '#6b7280' : slot.isCorrect ? '#22c55e' : '#e63946',
@@ -447,12 +489,12 @@ export default function WordlePage() {
                 )}
               </div>
 
-              {error && <p className="font-code text-[10px] text-cp-red mt-2">{error}</p>}
+              {error && <p className="font-code text-[13px] text-cp-red mt-2">{error}</p>}
 
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !inputValue.trim()}
-                className="w-full mt-3 font-code text-[11px] tracking-[.12em] uppercase py-[11px] rounded-[8px] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="w-full mt-3 font-code text-[13px] tracking-[.12em] uppercase py-[11px] rounded-[8px] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
                 style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff', boxShadow: '0 4px 20px rgba(230,57,70,.3)' }}
                 onMouseEnter={e => { if (!isSubmitting) e.currentTarget.style.boxShadow = '0 4px 28px rgba(230,57,70,.5)'; }}
                 onMouseLeave={e => { e.currentTarget.style.boxShadow = '0 4px 20px rgba(230,57,70,.3)'; }}

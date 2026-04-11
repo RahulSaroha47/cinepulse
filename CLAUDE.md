@@ -52,17 +52,21 @@ app/
   layout.tsx                  — root layout, fonts, global styles
   page.tsx                    — redirects to /login
   globals.css                 — @theme tokens, base styles, .btn-primary, .btn-ghost
+  components/
+    GameLeaderboard.tsx       — reusable leaderboard panel (top 7 + player rank), used on all result screens
   (auth)/
     layout.tsx                — split-screen layout (left: form, right: poster grid)
     PosterGrid.tsx            — 'use client', 17 real TMDB posters in staggered grid
     login/page.tsx            — login form, field-level errors
     signup/page.tsx           — signup form, password strength bar, field-level errors
   dashboard/
-    page.tsx                  — full dashboard: navbar, stats, featured hero, games, watchlist, leaderboard
+    page.tsx                  — full dashboard: navbar, stats (Games/Streak/Rank/Score), hero, games scroll, leaderboard
   quiz/
-    page.tsx                  — full quiz flow: intro → 5 questions → result breakdown
+    page.tsx                  — full quiz flow: intro → 5 questions → result breakdown + leaderboard
   daily-movie/
-    page.tsx                  — fixed-height two-column layout: clues (left) + guesses/input (right)
+    page.tsx                  — fixed-height two-column layout: clues (left) + guesses/input (right); game-over shows leaderboard
+  jigsaw/
+    page.tsx                  — 3×3 drag-drop puzzle, 45s timer, result screen + leaderboard
   party/
     page.tsx                  — local multiplayer: setup → handoff → question → result → roundboard → endgame
 ```
@@ -80,7 +84,9 @@ com.cinepulse.backend/
     JwtFilter                 — reads Authorization header, sets User as principal in SecurityContext
     SecurityConfig            — global CORS (localhost:3000), stateless session, JWT filter chain
   user/
-    User (JPA entity)         — id, username, email, passwordHash, streak, lastQuizDate, totalScore
+    User (JPA entity)         — id, username, email, passwordHash, streak, lastQuizDate,
+                                 wordleStreak, wordleLastPlayed, jigsawStreak, jigsawLastPlayed,
+                                 overallStreak, overallLastPlayed, totalScore
     UserRepository
   movie/
     Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview,
@@ -101,25 +107,32 @@ com.cinepulse.backend/
     QuizAttempt (entity)      — user, quizDate, answersJson, score, completedAt
     Dialogue (entity)         — text, movieTitle, character_name (for WHO_SAID_IT)
     DirectorEntry (entity)    — name, moviesJson (for DIRECTORS_CUT)
-    QuizController            — GET /api/quiz/today, POST /api/quiz/submit
-    QuizService               — lazy daily quiz generation, scoring, streak updates
+    QuizController            — GET /api/quiz/today, POST /api/quiz/submit, GET /api/quiz/leaderboard
+    QuizService               — lazy daily quiz generation, scoring, streak updates, Redis leaderboard
     dto/                      — QuizQuestionDto, TodayQuizResponse, AnswerSubmission,
                                  QuizSubmitRequest, QuizResultResponse
   wordle/
     DailyWordle (entity)      — wordleDate (unique), movie (ManyToOne)
-    WordleAttempt (entity)    — user, wordleDate, guessesJson, solved, completedAt
+    WordleAttempt (entity)    — user, wordleDate, guessesJson, solved, score, completedAt
                                  unique constraint: (user_id, wordle_date)
     DailyWordleRepository
     WordleAttemptRepository
-    WordleService             — lazy daily game generation (date-seeded random), clue logic, guess validation
-    WordleController          — GET /api/daily-movie/today, POST /api/daily-movie/guess, GET /api/daily-movie/movies
-    dto/                      — ClueDto, WordleStatusResponse, GuessRequest, GuessResponse,
+    WordleService             — lazy daily game generation, clue logic, guess validation, scoring, streak updates
+    WordleController          — GET /api/daily-movie/today, POST /api/daily-movie/guess,
+                                 GET /api/daily-movie/movies, GET /api/daily-movie/leaderboard
+    dto/                      — ClueDto, WordleStatusResponse, GuessRequest, GuessResponse (includes score),
                                  MovieRevealDto, MovieTitleDto
   party/
     PartyService              — generates N questions on-the-fly (no DB writes), 8 question types,
                                  per-type non-repeating shuffled pools
     PartyController           — GET /api/party/questions?count=N (authenticated)
     dto/                      — PartyQuestionDto (includes correctAnswer — local game, client-side scoring)
+  leaderboard/
+    LeaderboardService        — Redis sorted sets: per-game daily (lb:{game}:{date}) + overall (lb:overall)
+                                 addDailyScore(), updateOverallScore(), getDailyLeaderboard(), getOverallLeaderboard()
+    LeaderboardController     — GET /api/leaderboard (overall all-time top 7 + player rank)
+    LeaderboardEntry          — record: rank, username, score
+    LeaderboardResponse       — record: top7 (List<LeaderboardEntry>), playerRank (LeaderboardEntry)
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
@@ -151,19 +164,43 @@ Frontend maps HTTP status → field-level errors (red border + message under the
 - network error → general error below form
 Errors clear when user starts typing in the affected field.
 
+## Scoring System
+
+| Game | Formula | Max |
+|---|---|---|
+| Daily Quiz | 5 base/question + speed bonus (`timeLeft × 3 / 20`, max 3/question) | ~40 pts |
+| Guess the Movie | 12/10/8/6/4/2 for guesses 1–6, failed = 0 | 12 pts |
+| Jigsaw | timeRemaining × 1 | 45 pts |
+
+No streak multiplier. Daily max across all games ≈ 97 pts.
+
+## Streak System
+- **Quiz streak** (`User.streak` + `User.lastQuizDate`) — increments on quiz submission
+- **Wordle streak** (`User.wordleStreak` + `User.wordleLastPlayed`) — increments on game completion (solved or failed)
+- **Jigsaw streak** (`User.jigsawStreak` + `User.jigsawLastPlayed`) — increments on puzzle completion
+- **Overall streak** (`User.overallStreak` + `User.overallLastPlayed`) — increments when any game is completed for the first time that day. Shown on dashboard.
+
+## Leaderboard System
+- Per-game daily Redis sorted sets: `lb:quiz:{date}`, `lb:wordle:{date}`, `lb:jigsaw:{date}` (TTL 2 days)
+- Overall all-time Redis sorted set: `lb:overall` (score = user's cumulative totalScore)
+- Per-game leaderboard shown on result screen after playing (top 7 + player's rank highlighted)
+- Overall leaderboard on dashboard (placeholder data — wire to `GET /api/leaderboard` when ready)
+- `GET /api/quiz/leaderboard`, `GET /api/daily-movie/leaderboard`, `GET /api/jigsaw/leaderboard` — authenticated
+- `GET /api/leaderboard` — overall, authenticated
+
 ## Quiz System
 
 ### Question Types & Scoring
 | Type | Base Points | Source data |
 |---|---|---|
-| POSTER_BLIND | 150 | movies table (poster image) |
-| WHO_SAID_IT | 100 | dialogues table |
-| DIRECTORS_CUT | 100 | director_entries table |
-| RELEASE_YEAR | 100 | movies table |
+| POSTER_BLIND | 5 | movies table (poster image) |
+| WHO_SAID_IT | 5 | dialogues table |
+| DIRECTORS_CUT | 5 | director_entries table |
+| RELEASE_YEAR | 5 | movies table |
 
-- Speed bonus: `timeLeft × 2` added to base (timer = 20s per question)
-- Streak multiplier applied to total: 1–6 days=1.0×, 7–13=1.1×, 14–29=1.25×, 30+=1.5×
-- Max score per quiz: 800 pts
+- Speed bonus: `Math.round(timeLeft × 3 / 20)` per correct answer (max 3 pts when timeLeft = 20)
+- No streak multiplier
+- Max score per quiz: ~40 pts
 
 ### Daily Quiz Composition
 5 questions per day, shuffled randomly:
@@ -208,7 +245,9 @@ DELETE FROM daily_quizzes;
 - `/api/daily-movie/movies` is **public** (no auth required) — permitted in SecurityConfig
 
 ### Guess the Movie Scoring / Streak
-⚠️ **TODO — not yet decided.** Scoring and streak logic will be designed separately.
+- Score: 12/10/8/6/4/2 pts for guesses 1–6; failed = 0 pts
+- Wordle streak tracked on `User` entity; increments on completion (solved or failed counts)
+- Score returned in `GuessResponse.score` and saved to `wordle_attempts.score`
 
 ### Guess the Movie API
 - `GET /api/daily-movie/today` → clues unlocked so far + guess history + backgroundPosterPath (always set, used for blurred bg)
@@ -253,13 +292,14 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - Game ends when all tiles are correctly placed or time runs out
 
 ### Scoring
-- 4×4 grid, 120 second limit
-- Score = timeRemaining × 10 (max 1,200 pts)
-- Timer stops when all 16 tiles are in correct positions, or runs out
+- 3×3 grid, 45 second limit
+- Score = timeRemaining × 1 (max 45 pts)
+- Timer stops when all 9 tiles are in correct positions, or runs out
 
 ### API
-- `GET /api/jigsaw/today` → `{ posterPath, tileOrder (16 shuffled indices), timeLimit, completed, score, movie }`
+- `GET /api/jigsaw/today` → `{ posterPath, tileOrder (9 shuffled indices), timeLimit, completed, score, movie }`
 - `POST /api/jigsaw/submit` → `{ timeTaken }` → `{ score, timeTaken, timeLimit, movie }`
+- `GET /api/jigsaw/leaderboard` → `{ top7, playerRank }` (authenticated)
 
 ### Notes
 - Tile scrambling is deterministic (date-seeded + offset from wordle seed) — same shuffle for all users
@@ -294,10 +334,10 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 
 ## Feature Roadmap
 1. **Daily Quiz** — ✅ done
-2. **Guess the Movie** — ✅ done (scoring/streak TBD); frontend route `/daily-movie`, API `/api/daily-movie/**`
+2. **Guess the Movie** — ✅ done; route `/daily-movie`, API `/api/daily-movie/**`
 3. **Party Mode** — ✅ done; 2–6 players, 8 question types, turn-based, scoring = timeLeft × 3
-4. **Poster Jigsaw Puzzle** — ✅ done; 4×4 grid, 90s timer, score = timeRemaining × 10, route `/jigsaw`, API `/api/jigsaw/**`
-5. **Leaderboard** — Redis sorted sets
+4. **Poster Jigsaw Puzzle** — ✅ done; 3×3 grid, 45s timer, score = timeRemaining × 1, route `/jigsaw`, API `/api/jigsaw/**`
+5. **Scoring + Streak + Leaderboard** — ✅ done; per-game streaks, Redis leaderboards, result-screen rankings
 6. **Watchlist + Follow/Feed**
 7. **Movie Pages** — TMDB API
 8. **Reviews** — user-written, no AI
@@ -310,12 +350,15 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - [x] Custom exceptions + GlobalExceptionHandler
 - [x] Docker — MySQL (3307) + Redis (6379) running
 - [x] Frontend auth pages — `/login` + `/signup`, split-screen, real TMDB posters, field-level errors
-- [x] Dashboard — navbar, stats bar, featured hero, games scroll, watchlist, leaderboard
+- [x] Dashboard — navbar, stats (Games/Streak/Rank/Score), hero, games scroll, leaderboard section
 - [x] TMDB integration — Bollywood movie seeder (~160 movies) + enrichment (genre, director, cast, tagline)
-- [x] Daily Quiz — all 4 question types, scoring, streak tracking, result breakdown
-- [x] Dashboard stats — wired from real DB (`/api/users/me/stats`)
-- [x] Guess the Movie — progressive clue reveal, 6 guesses, blurred bg, game over reveal (route: /daily-movie)
+- [x] Daily Quiz — all 4 question types, scoring (5 base + speed bonus), quiz streak, result breakdown
+- [x] Dashboard stats — wired from real DB (`/api/users/me/stats`) — returns overallStreak, gamesPlayed, totalScore, rank
+- [x] Guess the Movie — progressive clue reveal, 6 guesses, blurred bg, scoring (12→2 pts), wordle streak
 - [x] Party Mode — 2–6 players, 8 question types, 3/5/7 rounds, turn-based, timeLeft × 3 scoring
-- [ ] Guess the Movie scoring + streak — **TODO, to be decided**
-- [x] Poster Jigsaw Puzzle — 4×4 drag-drop, 120s timer, date-seeded shuffle, score = timeRemaining × 10
-- [ ] Leaderboard — Redis sorted sets
+- [x] Poster Jigsaw Puzzle — 3×3 drag-drop, 45s timer, date-seeded shuffle, score = timeRemaining × 1, jigsaw streak
+- [x] Scoring + Streak system — per-game independent streaks + overall streak, all update totalScore
+- [x] Leaderboard — Redis sorted sets; per-game daily top 7 shown on result screens; overall on dashboard (placeholder data — wire to /api/leaderboard)
+- [ ] Watchlist + Follow/Feed
+- [ ] Movie Pages
+- [ ] Reviews

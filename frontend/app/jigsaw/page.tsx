@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import GameLeaderboard from '../components/GameLeaderboard';
 import { useRouter } from 'next/navigation';
 
 const API = 'http://localhost:8080';
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
-const GRID = 4;
+const GRID = 3;
 const TILE_COUNT = GRID * GRID;
 
 interface MovieReveal { title: string; posterPath: string; releaseYear: number; }
@@ -120,7 +121,7 @@ export default function JigsawPage() {
     gameOverRef.current = true;
     clearInterval(timerRef.current!);
 
-    const timeRemaining = Math.max(0, (status?.timeLimit ?? 120) - timeTaken);
+    const timeRemaining = Math.max(0, (status?.timeLimit ?? 45) - timeTaken);
     const localScore = wasSolved ? timeRemaining * 10 : 0;
 
     setGameEnd({ reason: wasSolved ? 'solved' : 'timeout', timeTaken, score: localScore, movie: null });
@@ -183,7 +184,7 @@ export default function JigsawPage() {
   if (!status && !loadError) {
     return (
       <div className="min-h-screen bg-cp-bg flex items-center justify-center">
-        <p className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
+        <p className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted animate-pulse">
           Loading puzzle…
         </p>
       </div>
@@ -193,7 +194,7 @@ export default function JigsawPage() {
   if (loadError) {
     return (
       <div className="min-h-screen bg-cp-bg flex items-center justify-center">
-        <p className="font-code text-[11px] tracking-[.15em] uppercase text-cp-red">{loadError}</p>
+        <p className="font-code text-[13px] tracking-[.15em] uppercase text-cp-red">{loadError}</p>
       </div>
     );
   }
@@ -202,7 +203,7 @@ export default function JigsawPage() {
 
   // ── RESULT SCREEN ────────────────────────────────────────────────
   if (gameEnd && showResult) {
-    const timeRemaining = Math.max(0, (status?.timeLimit ?? 120) - gameEnd.timeTaken);
+    const timeRemaining = Math.max(0, (status?.timeLimit ?? 45) - gameEnd.timeTaken);
     return (
       <div className="min-h-screen bg-cp-bg flex flex-col items-center justify-center px-4 py-12">
         <div className="fixed inset-0 pointer-events-none" style={{
@@ -212,12 +213,12 @@ export default function JigsawPage() {
         }} />
         <div className="relative z-10 flex flex-col items-center gap-6 max-w-md w-full">
           <div className="text-center">
-            <p className="font-code text-[10px] tracking-[.2em] uppercase text-cp-muted mb-1">
+            <p className="font-code text-[13px] tracking-[.2em] uppercase text-cp-muted mb-1">
               {gameEnd.reason === 'timeout' ? "Time's Up!" : 'Puzzle Solved!'}
             </p>
             <h1 className="font-heading text-4xl text-cp-text">{gameEnd.score} pts</h1>
             {gameEnd.reason === 'solved' && (
-              <p className="font-code text-[11px] text-cp-muted mt-1">
+              <p className="font-code text-[13px] text-cp-muted mt-1">
                 {timeRemaining}s remaining × 10 pts/s
               </p>
             )}
@@ -230,20 +231,22 @@ export default function JigsawPage() {
               </div>
               <div className="text-center">
                 <h2 className="font-heading text-2xl text-cp-gold">{gameEnd.movie.title}</h2>
-                <p className="font-code text-[11px] text-cp-muted mt-1">{gameEnd.movie.releaseYear}</p>
+                <p className="font-code text-[13px] text-cp-muted mt-1">{gameEnd.movie.releaseYear}</p>
               </div>
             </>
           ) : gameEnd.reason === 'solved' ? (
-            <p className="font-code text-[11px] text-cp-muted animate-pulse">Loading reveal…</p>
+            <p className="font-code text-[13px] text-cp-muted animate-pulse">Loading reveal…</p>
           ) : null}
 
+          <GameLeaderboard endpoint="/api/jigsaw/leaderboard" />
+
           <div className="flex gap-3 w-full">
-            <button onClick={() => router.push('/dashboard')} className="flex-1 btn-ghost font-code text-[11px] tracking-[.15em] uppercase py-3">
+            <button onClick={() => router.push('/dashboard')} className="flex-1 btn-ghost font-code text-[13px] tracking-[.15em] uppercase py-3">
               ← Dashboard
             </button>
             <button
               onClick={resetGame}
-              className="flex-1 py-3 rounded-[10px] font-code text-[11px] tracking-[.15em] uppercase transition-all"
+              className="flex-1 py-3 rounded-[10px] font-code text-[13px] tracking-[.15em] uppercase transition-all"
               style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff' }}
             >
               Play Again
@@ -276,21 +279,21 @@ export default function JigsawPage() {
           <div>
             <h1 className="font-heading text-4xl text-cp-text">Poster Jigsaw</h1>
             <p className="font-body text-base text-cp-muted mt-2">
-              Rearrange the 16 tiles to reveal today's Bollywood movie poster.
+              Rearrange the 9 tiles to reveal today's Bollywood movie poster.
             </p>
           </div>
 
           <div className="flex flex-col gap-3 text-left w-full bg-cp-surface border border-cp-border rounded-[10px] p-5">
-            <p className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted mb-1">Rules</p>
-            <p className="font-body text-base text-cp-text">⏱ 90 seconds to solve</p>
+            <p className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted mb-1">Rules</p>
+            <p className="font-body text-base text-cp-text">⏱ 45 seconds to solve</p>
             <p className="font-body text-base text-cp-text">🖱 Drag tiles to swap them</p>
             <p className="font-body text-base text-cp-text">🏆 Score = time remaining × 10 pts</p>
-            <p className="font-body text-base text-cp-text">🎯 Max score: 900 pts</p>
+            <p className="font-body text-base text-cp-text">🎯 Max score: 450 pts</p>
           </div>
 
           <button
             onClick={startGame}
-            className="w-full py-4 rounded-[10px] font-code text-[14px] tracking-[.15em] uppercase transition-all"
+            className="w-full py-4 rounded-[10px] font-code text-[15px] tracking-[.15em] uppercase transition-all"
             style={{ background: 'linear-gradient(135deg, #e63946, #c1121f)', color: '#fff' }}
           >
             Start Puzzle →
@@ -298,7 +301,7 @@ export default function JigsawPage() {
 
           <button
             onClick={() => router.push('/dashboard')}
-            className="font-code text-[11px] tracking-[.15em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+            className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted hover:text-cp-text transition-colors"
           >
             ← Back
           </button>
@@ -318,12 +321,12 @@ export default function JigsawPage() {
         <div className="flex items-center justify-between mb-3">
           <button
             onClick={() => { clearInterval(timerRef.current!); router.push('/dashboard'); }}
-            className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted hover:text-cp-text transition-colors"
+            className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted hover:text-cp-text transition-colors"
           >
             ← Exit
           </button>
-          <p className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">Poster Jigsaw</p>
-          <div className="font-code text-[14px] font-bold" style={{ color: timerColor }}>
+          <p className="font-code text-[13px] tracking-[.15em] uppercase text-cp-muted">Poster Jigsaw</p>
+          <div className="font-code text-[15px] font-bold" style={{ color: timerColor }}>
             {timeLeft}s
           </div>
         </div>
@@ -374,13 +377,13 @@ export default function JigsawPage() {
         <div className="fixed inset-0 z-20 flex flex-col items-center justify-center"
           style={{ background: 'rgba(8,8,15,0.85)', backdropFilter: 'blur(4px)' }}>
           <p className="font-heading text-5xl text-cp-gold mb-3">Solved!</p>
-          <p className="font-code text-[11px] tracking-[.2em] uppercase text-cp-muted animate-pulse">
+          <p className="font-code text-[13px] tracking-[.2em] uppercase text-cp-muted animate-pulse">
             Loading result…
           </p>
         </div>
       )}
 
-      <p className="font-code text-[10px] tracking-[.1em] uppercase text-cp-muted mt-5">
+      <p className="font-code text-[13px] tracking-[.1em] uppercase text-cp-muted mt-5">
         Drag tiles to swap — green border = correct position
       </p>
     </div>

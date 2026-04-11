@@ -1,8 +1,11 @@
 package com.cinepulse.backend.wordle;
 
+import com.cinepulse.backend.leaderboard.LeaderboardService;
 import com.cinepulse.backend.movie.Movie;
 import com.cinepulse.backend.movie.MovieRepository;
+import com.cinepulse.backend.quiz.QuizService;
 import com.cinepulse.backend.user.User;
+import com.cinepulse.backend.user.UserRepository;
 import com.cinepulse.backend.wordle.dto.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +32,11 @@ public class WordleService {
     private final DailyWordleRepository dailyWordleRepository;
     private final WordleAttemptRepository wordleAttemptRepository;
     private final MovieRepository movieRepository;
+    private final UserRepository userRepository;
+    private final LeaderboardService leaderboardService;
     private final ObjectMapper objectMapper;
+
+    private static final int[] WORDLE_SCORES = {12, 10, 8, 6, 4, 2};
 
     // ── GET STATUS ────────────────────────────────────────────────
 
@@ -97,18 +104,48 @@ public class WordleService {
         boolean correct = movie.getTitle().equalsIgnoreCase(guess.trim());
         boolean failed = !correct && guesses.size() >= MAX_GUESSES;
 
+        int score = 0;
+        if (correct) {
+            score = WORDLE_SCORES[Math.min(guesses.size() - 1, WORDLE_SCORES.length - 1)];
+        }
+
         attempt.setGuessesJson(toJson(guesses));
         attempt.setSolved(correct);
+        attempt.setScore(score);
         if (correct || failed) {
             attempt.setCompletedAt(LocalDateTime.now());
         }
         wordleAttemptRepository.save(attempt);
+
+        if (correct || failed) {
+            // Update wordle streak
+            LocalDate yesterday = today.minusDays(1);
+            if (!today.equals(user.getWordleLastPlayed())) {
+                if (yesterday.equals(user.getWordleLastPlayed())) {
+                    user.setWordleStreak(user.getWordleStreak() + 1);
+                } else {
+                    user.setWordleStreak(1);
+                }
+                user.setWordleLastPlayed(today);
+            }
+
+            // Update overall streak
+            QuizService.updateOverallStreak(user, today);
+
+            user.setTotalScore(user.getTotalScore() + score);
+            userRepository.save(user);
+
+            // Update Redis leaderboard
+            leaderboardService.addDailyScore("wordle", user.getUsername(), score);
+            leaderboardService.updateOverallScore(user.getUsername(), user.getTotalScore());
+        }
 
         GuessResponse resp = new GuessResponse();
         resp.setCorrect(correct);
         resp.setSolved(correct);
         resp.setFailed(failed);
         resp.setGuessCount(guesses.size());
+        resp.setScore(score);
 
         // Unlock next clue on wrong guess (if not game over)
         if (!correct && !failed) {

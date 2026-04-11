@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface JigsawAttemptRepository extends JpaRepository<JigsawAttempt, Long> {
     Optional<JigsawAttempt> findByUserAndJigsawDate(User user, LocalDate date);
+    long countByUser(User user);
 }

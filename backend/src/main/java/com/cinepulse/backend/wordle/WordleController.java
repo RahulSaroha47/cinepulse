@@ -1,5 +1,7 @@
 package com.cinepulse.backend.wordle;
 
+import com.cinepulse.backend.leaderboard.LeaderboardResponse;
+import com.cinepulse.backend.leaderboard.LeaderboardService;
 import com.cinepulse.backend.user.User;
 import com.cinepulse.backend.wordle.dto.*;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +17,7 @@ import java.util.List;
 public class WordleController {
 
     private final WordleService wordleService;
+    private final LeaderboardService leaderboardService;
 
     @GetMapping("/today")
     public ResponseEntity<WordleStatusResponse> getToday(@AuthenticationPrincipal User user) {
@@ -31,5 +34,10 @@ public class WordleController {
     @GetMapping("/movies")
     public ResponseEntity<List<MovieTitleDto>> getMovies() {
         return ResponseEntity.ok(wordleService.getAllMovieTitles());
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<LeaderboardResponse> leaderboard(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(leaderboardService.getDailyLeaderboard("wordle", user.getUsername()));
     }
 }

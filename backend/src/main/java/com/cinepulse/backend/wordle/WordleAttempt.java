@@ -30,5 +30,7 @@ public class WordleAttempt {
 
     private boolean solved;
 
+    private int score;
+
     private LocalDateTime completedAt;
 }

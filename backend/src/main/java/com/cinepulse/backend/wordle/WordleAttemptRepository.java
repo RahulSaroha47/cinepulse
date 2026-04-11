@@ -8,4 +8,5 @@ import java.util.Optional;
 
 public interface WordleAttemptRepository extends JpaRepository<WordleAttempt, Long> {
     Optional<WordleAttempt> findByUserAndWordleDate(User user, LocalDate date);
+    long countByUser(User user);
 }

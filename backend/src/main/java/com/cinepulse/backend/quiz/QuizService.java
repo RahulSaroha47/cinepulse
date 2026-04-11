@@ -1,6 +1,7 @@
 package com.cinepulse.backend.quiz;
 
 import com.cinepulse.backend.movie.Movie;
+import com.cinepulse.backend.leaderboard.LeaderboardService;
 import com.cinepulse.backend.movie.MovieRepository;
 import com.cinepulse.backend.quiz.dto.*;
 import com.cinepulse.backend.user.User;
@@ -30,6 +31,7 @@ public class QuizService {
     private final DialogueRepository dialogueRepository;
     private final DirectorEntryRepository directorEntryRepository;
     private final UserRepository userRepository;
+    private final LeaderboardService leaderboardService;
     private final ObjectMapper objectMapper;
 
     private static final int TIMER_SECONDS = 20;
@@ -91,8 +93,10 @@ public class QuizService {
             if (question == null) continue;
 
             boolean correct = question.getCorrectAnswer().equalsIgnoreCase(submission.getSelectedAnswer());
-            int base = question.getType() == QuestionType.POSTER_BLIND ? 150 : 100;
-            int speedBonus = correct ? Math.min(submission.getTimeLeft(), TIMER_SECONDS) * 2 : 0;
+            int base = 5;
+            int speedBonus = correct
+                    ? (int) Math.round(Math.min(submission.getTimeLeft(), TIMER_SECONDS) * 3.0 / TIMER_SECONDS)
+                    : 0;
             int earned = correct ? base + speedBonus : 0;
             baseScore += earned;
 
@@ -107,21 +111,28 @@ public class QuizService {
             breakdown.add(r);
         }
 
-        double multiplier = streakMultiplier(user.getStreak());
-        int totalScore = (int) Math.round(baseScore * multiplier);
+        int totalScore = baseScore;
 
-        // Update user streak
+        // Update quiz streak
         LocalDate yesterday = today.minusDays(1);
-        if (today.equals(user.getLastQuizDate())) {
-            // already done today (shouldn't reach here, but guard)
-        } else if (yesterday.equals(user.getLastQuizDate())) {
-            user.setStreak(user.getStreak() + 1);
-        } else {
-            user.setStreak(1);
+        if (!today.equals(user.getLastQuizDate())) {
+            if (yesterday.equals(user.getLastQuizDate())) {
+                user.setStreak(user.getStreak() + 1);
+            } else {
+                user.setStreak(1);
+            }
+            user.setLastQuizDate(today);
         }
-        user.setLastQuizDate(today);
+
+        // Update overall streak
+        updateOverallStreak(user, today);
+
         user.setTotalScore(user.getTotalScore() + totalScore);
         userRepository.save(user);
+
+        // Update Redis leaderboard
+        leaderboardService.addDailyScore("quiz", user.getUsername(), totalScore);
+        leaderboardService.updateOverallScore(user.getUsername(), user.getTotalScore());
 
         // Persist attempt
         QuizAttempt attempt = new QuizAttempt();
@@ -134,7 +145,7 @@ public class QuizService {
 
         QuizResultResponse resp = new QuizResultResponse();
         resp.setBaseScore(baseScore);
-        resp.setStreakMultiplier(multiplier);
+        resp.setStreakMultiplier(1.0);
         resp.setTotalScore(totalScore);
         resp.setNewStreak(user.getStreak());
         resp.setBreakdown(breakdown);
@@ -286,11 +297,15 @@ public class QuizService {
         return opts;
     }
 
-    private double streakMultiplier(int streak) {
-        if (streak >= 30) return 1.5;
-        if (streak >= 14) return 1.25;
-        if (streak >= 7)  return 1.1;
-        return 1.0;
+    public static void updateOverallStreak(User user, LocalDate today) {
+        LocalDate yesterday = today.minusDays(1);
+        if (today.equals(user.getOverallLastPlayed())) return; // already counted today
+        if (yesterday.equals(user.getOverallLastPlayed())) {
+            user.setOverallStreak(user.getOverallStreak() + 1);
+        } else {
+            user.setOverallStreak(1);
+        }
+        user.setOverallLastPlayed(today);
     }
 
     private QuizQuestionDto toDto(QuizQuestion q) {
@@ -300,7 +315,7 @@ public class QuizService {
         dto.setQuestionText(q.getQuestionText());
         dto.setPosterPath(q.getPosterPath());
         dto.setOptions(fromJson(q.getOptionsJson()));
-        dto.setBasePoints(q.getType() == QuestionType.POSTER_BLIND ? 150 : 100);
+        dto.setBasePoints(5);
         return dto;
     }
 

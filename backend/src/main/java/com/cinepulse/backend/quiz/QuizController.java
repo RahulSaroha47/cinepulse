@@ -1,5 +1,7 @@
 package com.cinepulse.backend.quiz;
 
+import com.cinepulse.backend.leaderboard.LeaderboardResponse;
+import com.cinepulse.backend.leaderboard.LeaderboardService;
 import com.cinepulse.backend.quiz.dto.QuizResultResponse;
 import com.cinepulse.backend.quiz.dto.QuizSubmitRequest;
 import com.cinepulse.backend.quiz.dto.TodayQuizResponse;
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.*;
 public class QuizController {
 
     private final QuizService quizService;
+    private final LeaderboardService leaderboardService;
 
     @GetMapping("/today")
     public ResponseEntity<TodayQuizResponse> getToday(
@@ -27,5 +30,10 @@ public class QuizController {
             @AuthenticationPrincipal User user,
             @RequestBody QuizSubmitRequest req) {
         return ResponseEntity.ok(quizService.submitQuiz(user.getEmail(), req));
+    }
+
+    @GetMapping("/leaderboard")
+    public ResponseEntity<LeaderboardResponse> leaderboard(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(leaderboardService.getDailyLeaderboard("quiz", user.getUsername()));
     }
 }

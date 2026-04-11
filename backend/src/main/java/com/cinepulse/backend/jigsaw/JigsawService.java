@@ -3,9 +3,12 @@ package com.cinepulse.backend.jigsaw;
 import com.cinepulse.backend.jigsaw.dto.JigsawStatusResponse;
 import com.cinepulse.backend.jigsaw.dto.JigsawSubmitResponse;
 import com.cinepulse.backend.jigsaw.dto.MovieRevealDto;
+import com.cinepulse.backend.leaderboard.LeaderboardService;
 import com.cinepulse.backend.movie.Movie;
 import com.cinepulse.backend.movie.MovieRepository;
+import com.cinepulse.backend.quiz.QuizService;
 import com.cinepulse.backend.user.User;
+import com.cinepulse.backend.user.UserRepository;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -29,14 +32,16 @@ import java.util.stream.IntStream;
 @RequiredArgsConstructor
 public class JigsawService {
 
-    private static final int GRID_SIZE = 4;           // 4×4
-    private static final int TILE_COUNT = GRID_SIZE * GRID_SIZE; // 16
-    private static final int TIME_LIMIT = 90;          // seconds
-    private static final int POINTS_PER_SECOND = 10;  // score = timeRemaining × 10
+    private static final int GRID_SIZE = 3;           // 3×3
+    private static final int TILE_COUNT = GRID_SIZE * GRID_SIZE; // 9
+    private static final int TIME_LIMIT = 45;          // seconds
+    private static final int POINTS_PER_SECOND = 1;   // score = timeRemaining × 1 (max 45)
 
     private final DailyJigsawRepository dailyJigsawRepository;
     private final JigsawAttemptRepository jigsawAttemptRepository;
     private final MovieRepository movieRepository;
+    private final UserRepository userRepository;
+    private final LeaderboardService leaderboardService;
     private final ObjectMapper objectMapper;
 
     // ── GET STATUS ────────────────────────────────────────────────
@@ -93,6 +98,27 @@ public class JigsawService {
         attempt.setCompleted(true);
         attempt.setCompletedAt(LocalDateTime.now());
         jigsawAttemptRepository.save(attempt);
+
+        // Update jigsaw streak
+        LocalDate yesterday = today.minusDays(1);
+        if (!today.equals(user.getJigsawLastPlayed())) {
+            if (yesterday.equals(user.getJigsawLastPlayed())) {
+                user.setJigsawStreak(user.getJigsawStreak() + 1);
+            } else {
+                user.setJigsawStreak(1);
+            }
+            user.setJigsawLastPlayed(today);
+        }
+
+        // Update overall streak
+        QuizService.updateOverallStreak(user, today);
+
+        user.setTotalScore(user.getTotalScore() + score);
+        userRepository.save(user);
+
+        // Update Redis leaderboard
+        leaderboardService.addDailyScore("jigsaw", user.getUsername(), score);
+        leaderboardService.updateOverallScore(user.getUsername(), user.getTotalScore());
 
         JigsawSubmitResponse resp = new JigsawSubmitResponse();
         resp.setScore(score);

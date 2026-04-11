@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import GameLeaderboard from '../components/GameLeaderboard';
 import { useRouter } from 'next/navigation';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
@@ -73,6 +74,7 @@ export default function QuizPage() {
   const [result, setResult] = useState<QuizResult | null>(null);
   const [error, setError] = useState('');
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const savedResultRef = useRef<QuizResult | null>(null);
 
   // ── Load today's quiz ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -160,13 +162,31 @@ export default function QuizPage() {
         },
         body: JSON.stringify({ answers: finalAnswers }),
       });
+      if (res.status === 409) {
+        // Already submitted — show saved result if replaying, else already-done screen
+        if (savedResultRef.current) { setResult(savedResultRef.current); setScreen('result'); }
+        else { setScreen('already-done'); }
+        return;
+      }
+      if (!res.ok) { setError('Failed to submit quiz.'); setScreen('error'); return; }
       const data: QuizResult = await res.json();
+      savedResultRef.current = data;
       setResult(data);
       setScreen('result');
     } catch {
       setError('Failed to submit quiz.');
       setScreen('error');
     }
+  }
+
+  function handlePlayAgain() {
+    setCurrent(0);
+    setAnswers([]);
+    setSelected(null);
+    setConfirmed(false);
+    setRevealed(0);
+    setResult(null);
+    setScreen('intro');
   }
 
   // ── Reveal handler (Poster Blind) ─────────────────────────────────────────
@@ -194,7 +214,10 @@ export default function QuizPage() {
         <h2 className="font-heading text-3xl tracking-widest mb-2">QUIZ DONE</h2>
         <p className="font-body text-cp-muted mb-1">You already completed today's quiz.</p>
         <p className="font-code text-2xl text-cp-gold mt-4">{quiz.previousScore} pts</p>
-        <button onClick={() => router.push('/dashboard')} className="mt-6 btn-ghost">← Dashboard</button>
+        <div className="flex flex-col gap-3 mt-6">
+          <button onClick={handlePlayAgain} className="btn-primary">Play Again ↺</button>
+          <button onClick={() => router.push('/dashboard')} className="btn-ghost">← Dashboard</button>
+        </div>
       </div>
     </PageShell>
   );
@@ -202,13 +225,13 @@ export default function QuizPage() {
   if (screen === 'intro' && quiz) return (
     <PageShell>
       <div className="text-center max-w-md">
-        <div className="font-code text-[9px] tracking-[.18em] uppercase text-cp-red mb-3 flex items-center justify-center gap-2">
+        <div className="font-code text-[12px] tracking-[.18em] uppercase text-cp-red mb-3 flex items-center justify-center gap-2">
           <span className="w-1.5 h-1.5 rounded-full bg-cp-red animate-pulse" />
           DAILY QUIZ
         </div>
         <h1 className="font-heading text-4xl tracking-widest mb-3">TODAY'S THEME</h1>
         <p className="font-body text-xl text-cp-gold mb-6">{quiz.theme}</p>
-        <div className="font-code text-[10px] text-cp-muted mb-8 space-y-1">
+        <div className="font-code text-[13px] text-cp-muted mb-8 space-y-1">
           <p>5 questions · 20 seconds each</p>
           <p>Streak bonus unlocks at 7 days</p>
           <p>Max score: 800 pts</p>
@@ -232,7 +255,7 @@ export default function QuizPage() {
       <div className="min-h-screen bg-cp-bg text-cp-text flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between px-8 py-4 border-b border-cp-border">
-          <button onClick={() => router.push('/dashboard')} className="font-code text-[10px] text-cp-muted hover:text-cp-text tracking-widest uppercase">
+          <button onClick={() => router.push('/dashboard')} className="font-code text-[13px] text-cp-muted hover:text-cp-text tracking-widest uppercase">
             ✕ Exit
           </button>
           <div className="flex items-center gap-3">
@@ -247,7 +270,7 @@ export default function QuizPage() {
         <div className="flex-1 flex flex-col items-center justify-center px-8 py-6 max-w-xl mx-auto w-full">
 
           {/* Type badge */}
-          <span className="font-code text-[8px] tracking-[.15em] uppercase px-2 py-1 rounded-sm mb-5"
+          <span className="font-code text-[11px] tracking-[.15em] uppercase px-2 py-1 rounded-sm mb-5"
             style={{
               background: isPosterBlind ? 'rgba(230,57,70,.12)' : q.type === 'WHO_SAID_IT' ? 'rgba(244,196,48,.12)' : 'rgba(139,92,246,.12)',
               color: isPosterBlind ? '#e63946' : q.type === 'WHO_SAID_IT' ? '#f4c430' : '#a78bfa',
@@ -267,7 +290,7 @@ export default function QuizPage() {
               {isPosterBlind && revealed < 3 && !confirmed && (
                 <button
                   onClick={handleReveal}
-                  className="absolute bottom-2 left-1/2 -translate-x-1/2 font-code text-[8px] tracking-widest uppercase px-3 py-1 rounded bg-black/70 text-cp-muted hover:text-cp-text border border-white/10"
+                  className="absolute bottom-2 left-1/2 -translate-x-1/2 font-code text-[11px] tracking-widest uppercase px-3 py-1 rounded bg-black/70 text-cp-muted hover:text-cp-text border border-white/10"
                 >
                   Reveal (−{REVEAL_COSTS[revealed + 1] - REVEAL_COSTS[revealed]} pts)
                 </button>
@@ -320,7 +343,7 @@ export default function QuizPage() {
           </div>
 
           {/* Points reminder */}
-          <p className="font-code text-[9px] text-cp-muted mt-4 tracking-widest">
+          <p className="font-code text-[12px] text-cp-muted mt-4 tracking-widest">
             {q.basePoints} BASE PTS + UP TO {TIMER_SECONDS * 2} SPEED BONUS
           </p>
         </div>
@@ -333,15 +356,15 @@ export default function QuizPage() {
       <div className="max-w-xl mx-auto px-8 py-12">
         {/* Score header */}
         <div className="text-center mb-10">
-          <div className="font-code text-[9px] tracking-[.18em] uppercase text-cp-muted mb-2">QUIZ COMPLETE</div>
+          <div className="font-code text-[12px] tracking-[.18em] uppercase text-cp-muted mb-2">QUIZ COMPLETE</div>
           <div className="font-heading text-6xl text-cp-gold leading-none">{result.totalScore}</div>
-          <div className="font-code text-[10px] text-cp-muted mt-1">POINTS</div>
+          <div className="font-code text-[13px] text-cp-muted mt-1">POINTS</div>
           {result.streakMultiplier > 1 && (
-            <div className="mt-3 font-code text-[10px] text-cp-gold">
+            <div className="mt-3 font-code text-[13px] text-cp-gold">
               🔥 {result.streakMultiplier}× streak multiplier applied
             </div>
           )}
-          <div className="mt-2 font-code text-[10px] text-cp-muted">
+          <div className="mt-2 font-code text-[13px] text-cp-muted">
             Streak: {result.newStreak} day{result.newStreak !== 1 ? 's' : ''}
           </div>
         </div>
@@ -355,13 +378,13 @@ export default function QuizPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1">
-                  <p className="font-body text-sm font-medium line-clamp-2">{item.questionText}</p>
-                  <p className="font-code text-[9px] text-cp-muted mt-1">
+                  <p className="font-body text-base font-medium line-clamp-2">{item.questionText}</p>
+                  <p className="font-code text-[12px] text-cp-muted mt-1">
                     Your answer: <span className={item.correct ? 'text-green-400' : 'text-cp-red'}>{item.selectedAnswer || '(no answer)'}</span>
                     {!item.correct && <> · Correct: <span className="text-cp-gold">{item.correctAnswer}</span></>}
                   </p>
                 </div>
-                <span className={`font-code text-sm shrink-0 ${item.correct ? 'text-green-400' : 'text-cp-muted'}`}>
+                <span className={`font-code text-base shrink-0 ${item.correct ? 'text-green-400' : 'text-cp-muted'}`}>
                   +{item.pointsEarned}
                 </span>
               </div>
@@ -369,9 +392,16 @@ export default function QuizPage() {
           ))}
         </div>
 
-        <button onClick={() => router.push('/dashboard')} className="btn-primary w-full text-center">
-          ← Back to Dashboard
-        </button>
+        <GameLeaderboard endpoint="/api/quiz/leaderboard" />
+
+        <div className="flex flex-col gap-3 mt-2">
+          <button onClick={handlePlayAgain} className="btn-primary w-full text-center">
+            Play Again ↺
+          </button>
+          <button onClick={() => router.push('/dashboard')} className="btn-ghost w-full text-center">
+            ← Back to Dashboard
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -393,7 +423,7 @@ function Spinner() {
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="w-8 h-8 rounded-full border-2 border-cp-border border-t-cp-red animate-spin" />
-      <p className="font-code text-[10px] text-cp-muted tracking-widest uppercase">Loading quiz...</p>
+      <p className="font-code text-[13px] text-cp-muted tracking-widest uppercase">Loading quiz...</p>
     </div>
   );
 }
@@ -407,7 +437,7 @@ function TimerBar({ timeLeft, total }: { timeLeft: number; total: number }) {
         <div className="h-full rounded-full transition-all duration-1000"
           style={{ width: `${pct}%`, background: color }} />
       </div>
-      <span className="font-code text-[10px] w-6 text-right" style={{ color }}>{timeLeft}s</span>
+      <span className="font-code text-[13px] w-6 text-right" style={{ color }}>{timeLeft}s</span>
     </div>
   );
 }

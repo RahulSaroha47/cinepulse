@@ -26,7 +26,7 @@ function getGreeting() {
   return 'Good evening';
 }
 
-type UserStats = { streak: number; totalScore: number; rank: number; quizzesCompleted: number };
+type UserStats = { streak: number; quizStreak: number; totalScore: number; rank: number; gamesPlayed: number };
 
 export default function Dashboard() {
   const router = useRouter();
@@ -128,7 +128,7 @@ export default function Dashboard() {
             style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.07)' }}
           >
             {([
-              [stats ? String(stats.quizzesCompleted) : '—', 'Quizzes'],
+              [stats ? String(stats.gamesPlayed ?? 0) : '—', 'Games'],
               [stats ? String(stats.streak) : '—', 'Streak'],
               [stats ? `#${stats.rank}` : '—', 'Rank'],
               [stats ? stats.totalScore.toLocaleString() : '—', 'Score'],
