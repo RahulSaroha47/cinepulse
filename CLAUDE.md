@@ -60,7 +60,10 @@ app/
     login/page.tsx            — login form, field-level errors
     signup/page.tsx           — signup form, password strength bar, field-level errors
   dashboard/
-    page.tsx                  — full dashboard: navbar, stats (Games/Streak/Rank/Score), hero, games scroll, leaderboard
+    page.tsx                  — full dashboard: navbar, stats (Games/Streak/Rank/Score), hero, games scroll, Top 10 Rated section, overall leaderboard
+  movies/
+    page.tsx                  — browse all Bollywood films, search by title/genre, grid with avg rating
+    [id]/page.tsx             — movie detail: blurred bg, poster+meta left, avg rating + review form + reviews right (Option A layout)
   quiz/
     page.tsx                  — full quiz flow: intro → 5 questions → result breakdown + leaderboard
   daily-movie/
@@ -92,6 +95,15 @@ com.cinepulse.backend/
     Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview,
                                  genre, language, director, cast, tagline
     MovieRepository
+    MovieSummaryDto           — id, title, posterPath, releaseYear, genre, avgRating, reviewCount
+    MovieDetailDto            — all Movie fields + avgRating, reviewCount, userReviewed
+    TopRatedMovieDto          — id, title, posterPath, releaseYear, genre, director, overview, avgRating, reviewCount
+    MovieController           — GET /api/movies/posters (public, returns {id,posterPath}[])
+                                 GET /api/movies (public, all films with avg rating)
+                                 GET /api/movies/top-rated (public, top 10 by avg rating)
+                                 GET /api/movies/{id} (public, movie detail + userReviewed flag)
+                                 GET /api/movies/{id}/reviews (public)
+                                 POST /api/movies/{id}/reviews (authenticated, one per user per movie)
   tmdb/
     TmdbService               — seeds Bollywood movies from TMDB on startup (/discover/movie?with_original_language=hi, 8 pages ~160 movies)
                                  enrichMovies() fetches genre/language/director/cast/tagline per movie (runs once)
@@ -133,6 +145,12 @@ com.cinepulse.backend/
     LeaderboardController     — GET /api/leaderboard (overall all-time top 7 + player rank)
     LeaderboardEntry          — record: rank, username, score
     LeaderboardResponse       — record: top7 (List<LeaderboardEntry>), playerRank (LeaderboardEntry)
+  review/
+    Review (entity)           — id, user, movie, rating (1–5), body (TEXT), createdAt; unique (user_id, movie_id)
+    ReviewRepository          — findByMovieOrderByCreatedAtDesc, existsByUserAndMovie, findAvgRatingByMovie, countByMovie, findTopRatedMovies
+    ReviewRequest             — record: { rating, body }
+    ReviewResponse            — record: { id, username, rating, body, createdAt }
+    ReviewService             — getAllMovies, getMovieDetail, getTopRated, getReviews, addReview
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
@@ -322,6 +340,19 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 | wordle_attempts | POST /api/daily-movie/guess |
 | daily_jigsaws | JigsawService on first GET /api/jigsaw/today of the day |
 | jigsaw_attempts | POST /api/jigsaw/submit |
+| reviews | POST /api/movies/{id}/reviews |
+
+## Reviews System
+- One review per user per movie — enforced by unique constraint on `(user_id, movie_id)`
+- Rating: 1–5 stars (int), body: free text
+- `GET /api/movies` — all films with avgRating + reviewCount (public)
+- `GET /api/movies/top-rated` — top 10 by avg rating, min 1 review (public)
+- `GET /api/movies/{id}` — movie detail + `userReviewed` flag (auth optional)
+- `GET /api/movies/{id}/reviews` — all reviews newest first (public)
+- `POST /api/movies/{id}/reviews` — submit review (authenticated); 409 if already reviewed
+- Already-reviewed error uses `IllegalStateException` → caught by `GlobalExceptionHandler` → 409
+- Dashboard: top 10 section hidden when no reviews exist; shows once users start reviewing
+- Reviews game card on dashboard routes to `/movies` (browse page entry point)
 
 ## TMDB Integration
 - API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
@@ -338,12 +369,11 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 3. **Party Mode** — ✅ done; 2–6 players, 8 question types, turn-based, scoring = timeLeft × 3
 4. **Poster Jigsaw Puzzle** — ✅ done; 3×3 grid, 45s timer, score = timeRemaining × 1, route `/jigsaw`, API `/api/jigsaw/**`
 5. **Scoring + Streak + Leaderboard** — ✅ done; per-game streaks, Redis leaderboards, result-screen rankings
-6. **Watchlist + Follow/Feed**
-7. **Movie Pages** — TMDB API
-8. **Reviews** — user-written, no AI
-9. ~~AI Movie Recommender~~ — skipped
-10. ~~Who Said It? game~~ — removed
-11. ~~AI Reviews Summary~~ — skipped
+6. **Movie Pages + Reviews** — ✅ done; `/movies` browse, `/movies/[id]` detail + review form, top 10 on dashboard
+7. **Watchlist + Follow/Feed**
+8. ~~AI Movie Recommender~~ — skipped
+9. ~~Who Said It? game~~ — removed
+10. ~~AI Reviews Summary~~ — skipped
 
 ## Build Status
 - [x] JWT auth — signup/login backend complete
@@ -359,6 +389,7 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - [x] Poster Jigsaw Puzzle — 3×3 drag-drop, 45s timer, date-seeded shuffle, score = timeRemaining × 1, jigsaw streak
 - [x] Scoring + Streak system — per-game independent streaks + overall streak, all update totalScore
 - [x] Leaderboard — Redis sorted sets; per-game daily top 7 on result screens; overall dashboard leaderboard wired to /api/leaderboard
+- [x] Movie Pages — `/movies` browse with search, `/movies/[id]` detail (poster + meta + overview)
+- [x] Reviews — user-written, 1 per user per movie, star rating (1–5) + text body, avg rating shown on movie cards
+- [x] Top 10 Rated on CinePulse — dashboard section: top 3 large cards + ranks 4–10 small tiles, wired to /api/movies/top-rated
 - [ ] Watchlist + Follow/Feed
-- [ ] Movie Pages
-- [ ] Reviews
