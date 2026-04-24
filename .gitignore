@@ -12,6 +12,9 @@ yarn-error.log*
 .env.development
 .env.production
 
+# Local Spring Boot secrets (never commit)
+**/application-local.yml
+
 # Java / Spring Boot / Maven
 backend/target/
 *.class

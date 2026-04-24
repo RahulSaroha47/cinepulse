@@ -16,9 +16,10 @@ const GAME_CARDS = [
 
 function getGreeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (h >= 5 && h < 12) return 'Good morning';
+  if (h >= 12 && h < 17) return 'Good afternoon';
+  if (h >= 17 && h < 22) return 'Good evening';
+  return 'Good night';
 }
 
 type UserStats = { streak: number; quizStreak: number; totalScore: number; rank: number; gamesPlayed: number };
@@ -26,7 +27,9 @@ type UserStats = { streak: number; quizStreak: number; totalScore: number; rank:
 export default function Dashboard() {
   const router = useRouter();
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [initials, setInitials] = useState('?');
+  const [profileOpen, setProfileOpen] = useState(false);
   const [stats, setStats] = useState<UserStats | null>(null);
   type QuizHero = { theme: string; themePosterPath: string; alreadyCompleted: boolean; previousScore: number | null };
   const [quizHero, setQuizHero] = useState<QuizHero | null>(null);
@@ -50,6 +53,7 @@ export default function Dashboard() {
           setUsername(name.charAt(0).toUpperCase() + name.slice(1));
           setInitials(name.slice(0, 2).toUpperCase());
         }
+        if (user.email) setEmail(user.email);
       } catch {}
     }
 
@@ -108,11 +112,60 @@ export default function Dashboard() {
           >
             🔥 {stats ? `${stats.streak} day streak` : '— streak'}
           </div>
-          <div
-            className="w-9 h-9 rounded-full flex items-center justify-center font-heading text-[13px] cursor-pointer shrink-0"
-            style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
-          >
-            {initials}
+          <div className="relative">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center font-heading text-[13px] cursor-pointer shrink-0 select-none"
+              style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
+              onClick={() => setProfileOpen(o => !o)}
+            >
+              {initials}
+            </div>
+            {profileOpen && (
+              <>
+                {/* backdrop to close on outside click */}
+                <div className="fixed inset-0 z-40" onClick={() => setProfileOpen(false)} />
+                <div
+                  className="absolute right-0 top-[calc(100%+10px)] z-50 rounded-[10px] border border-cp-border overflow-hidden"
+                  style={{ background: '#0f0f1a', minWidth: 220, boxShadow: '0 8px 32px rgba(0,0,0,.6)' }}
+                >
+                  {/* user info header */}
+                  <div className="px-4 py-4 border-b border-cp-border">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center font-heading text-[14px] shrink-0"
+                        style={{ background: 'linear-gradient(135deg, #e63946, #8b1c24)' }}
+                      >
+                        {initials}
+                      </div>
+                      <div>
+                        <div className="font-heading text-[.9rem] tracking-[.04em]">{username}</div>
+                        <div className="font-code text-[10px] text-cp-muted mt-[2px]">{email}</div>
+                      </div>
+                    </div>
+                  </div>
+                  {/* menu items */}
+                  <div className="py-1">
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-[10px] font-code text-[11px] text-cp-muted hover:text-cp-text hover:bg-white/5 transition-colors text-left"
+                      onClick={() => { setProfileOpen(false); router.push('/movies'); }}
+                    >
+                      <span>🎬</span> Browse Movies
+                    </button>
+                    <div className="h-px bg-cp-border mx-4 my-1" />
+                    <button
+                      className="w-full flex items-center gap-3 px-4 py-[10px] font-code text-[11px] text-cp-red hover:bg-cp-red/10 transition-colors text-left"
+                      onClick={() => {
+                        localStorage.removeItem('cp_token');
+                        localStorage.removeItem('cp_user');
+                        router.push('/login');
+                      }}
+                    >
+                      <span>🚪</span> Log out
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </nav>

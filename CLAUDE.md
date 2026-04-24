@@ -7,18 +7,19 @@ Movie lover's social platform. Solo project by Rahul Saroha.
 ## Stack
 - **Frontend:** Next.js 16.2.2 (App Router) + Tailwind CSS v4 — `/frontend`
 - **Backend:** Spring Boot Java — `/backend`
-- **DB:** MySQL on port 3307 (Docker)
-- **Cache:** Redis on port 6379 (Docker)
+- **DB:** PostgreSQL 16 on port 5432 (Docker)
+- **Cache:** Redis on port 6380 (Docker, container port 6379 → host port 6380)
 
 ## Running Services
 | Service | Port | Start command |
 |---|---|---|
 | Next.js | 3000 | `cd frontend && npm run dev` |
 | Spring Boot | 8080 | `./mvnw spring-boot:run` in `/backend` |
-| MySQL | 3307 | Docker (already running) |
-| Redis | 6379 | Docker (already running) |
+| PostgreSQL | 5432 | Docker — `docker start cinepulse-postgres` |
+| Redis | 6380 | Docker — `docker start cinepulse-redis` |
 
 API base URL from frontend: `http://localhost:8080`
+Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 ## Design System
 - **Theme:** Dark cinematic — deep midnight `#08080f` with blue-purple tint, red glow accents
@@ -93,7 +94,7 @@ com.cinepulse.backend/
     UserRepository
   movie/
     Movie (JPA entity)        — id, tmdbId, title, posterPath, releaseYear, overview,
-                                 genre, language, director, cast, tagline
+                                 genre, language, director, cast (column: movie_cast), tagline
     MovieRepository
     MovieSummaryDto           — id, title, posterPath, releaseYear, genre, avgRating, reviewCount
     MovieDetailDto            — all Movie fields + avgRating, reviewCount, userReviewed
@@ -104,8 +105,12 @@ com.cinepulse.backend/
                                  GET /api/movies/{id} (public, movie detail + userReviewed flag)
                                  GET /api/movies/{id}/reviews (public)
                                  POST /api/movies/{id}/reviews (authenticated, one per user per movie)
+  admin/
+    AdminController           — POST /api/admin/seed-movies?pages=N (X-Admin-Key header, 1–75 pages)
+                                 appends new Bollywood movies on-demand without restart; triggers enrichMovies() after
   tmdb/
-    TmdbService               — seeds Bollywood movies from TMDB on startup (/discover/movie?with_original_language=hi, 8 pages ~160 movies)
+    TmdbService               — seeds Bollywood movies from TMDB on startup (/discover/movie?with_original_language=hi, 8 pages ~130 movies)
+                                 appendMovies(pages) — on-demand append, skips existing by tmdbId
                                  enrichMovies() fetches genre/language/director/cast/tagline per movie (runs once)
     TmdbMovieResult           — DTO for TMDB movie list response
     TmdbMovieDetails          — DTO for /movie/{id}?append_to_response=credits (enrichment)
@@ -151,13 +156,22 @@ com.cinepulse.backend/
     ReviewRequest             — record: { rating, body }
     ReviewResponse            — record: { id, username, rating, body, createdAt }
     ReviewService             — getAllMovies, getMovieDetail, getTopRated, getReviews, addReview
+  config/
+    OpenApiConfig             — Swagger UI config (springdoc-openapi), JWT Bearer auth scheme
   exception/
     GlobalExceptionHandler    — @RestControllerAdvice, maps exceptions to HTTP responses
     EmailAlreadyExistsException    — 409 Conflict
     UsernameAlreadyExistsException — 409 Conflict
     InvalidCredentialsException    — 401 Unauthorized (different messages for no-account vs wrong-password)
+    IllegalArgumentException       — 404 if message contains "not found", else 400 Bad Request
   DataSeeder                  — ApplicationRunner, seeds movies + enriches + dialogues + directors on startup
 ```
+
+## Secrets & Config
+- All secrets in `application-local.yml` (gitignored) — never in `application.yml`
+- `application.yml` uses `${ENV_VAR}` placeholders only
+- Spring active profile `local` loads `application-local.yml` automatically in dev
+- Production: set `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `TMDB_API_KEY`, `ADMIN_SECRET_KEY` as env vars
 
 ## CORS
 Global config in `SecurityConfig` for all `/api/**` routes → `http://localhost:3000`.
@@ -355,13 +369,14 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - Reviews game card on dashboard routes to `/movies` (browse page entry point)
 
 ## TMDB Integration
-- API key stored in `application.yml` as `${TMDB_API_KEY:583e5a836c79f2603f42122b3a8e2a61}` (env var with dev fallback)
+- API key stored in `application-local.yml` (gitignored); production uses `TMDB_API_KEY` env var
 - Base URL: `https://api.themoviedb.org/3`
 - Poster CDN: `https://image.tmdb.org/t/p/w500{posterPath}`
-- Seeder fetches: **Bollywood only** — `/discover/movie?with_original_language=hi`, 8 pages (~160 movies)
+- Seeder fetches: **Bollywood only** — `/discover/movie?with_original_language=hi`, 8 pages (~130 movies) on startup
+- On-demand: `POST /api/admin/seed-movies?pages=N` with `X-Admin-Key` header — appends without restart
 - Enrichment: `/movie/{tmdbId}?append_to_response=credits` — fetches genre, language, tagline, director, cast
-- Enrichment runs once on startup (skipped if all movies already have genre populated)
-- To expand movie data later: increase pages in `TmdbService.seedMovies()` (max ~75 pages for all Hindi films)
+- Enrichment runs automatically after each seed (skips already-enriched movies)
+- DB currently has ~848 movies (35 pages seeded)
 
 ## Feature Roadmap
 1. **Daily Quiz** — ✅ done
@@ -392,4 +407,10 @@ A scrambled movie poster puzzle — tiles are shuffled and the user drags them b
 - [x] Movie Pages — `/movies` browse with search, `/movies/[id]` detail (poster + meta + overview)
 - [x] Reviews — user-written, 1 per user per movie, star rating (1–5) + text body, avg rating shown on movie cards
 - [x] Top 10 Rated on CinePulse — dashboard section: top 3 large cards + ranks 4–10 small tiles, wired to /api/movies/top-rated
+- [x] PostgreSQL migration — switched from MySQL; `cast` column renamed to `movie_cast` (reserved word)
+- [x] Secrets cleanup — all secrets in gitignored `application-local.yml`, `application.yml` uses env var placeholders
+- [x] Admin endpoint — `POST /api/admin/seed-movies?pages=N` for on-demand movie seeding without restart
+- [x] Swagger UI — `springdoc-openapi`, available at `/swagger-ui.html`
+- [x] Dashboard fixes — greeting (Good night for late hours), profile dropdown with logout
+- [x] Exception handling — `IllegalArgumentException` → 404 (not found) or 400 (bad request)
 - [ ] Watchlist + Follow/Feed

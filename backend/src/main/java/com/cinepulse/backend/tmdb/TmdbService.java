@@ -28,16 +28,17 @@ public class TmdbService {
             log.info("Movies already seeded, skipping.");
             return;
         }
+        appendMovies(8);
+    }
 
+    public int appendMovies(int pages) {
         RestClient client = RestClient.create();
         int saved = 0;
-
-        // Fetch Bollywood movies — original language Hindi, sorted by popularity
-        for (int page = 1; page <= 8; page++) {
+        for (int page = 1; page <= pages; page++) {
             saved += fetchBollywoodPage(client, page);
         }
-
-        log.info("Seeded {} Bollywood movies from TMDB.", saved);
+        log.info("Appended {} new Bollywood movies from TMDB ({} pages).", saved, pages);
+        return saved;
     }
 
     public void enrichMovies() {

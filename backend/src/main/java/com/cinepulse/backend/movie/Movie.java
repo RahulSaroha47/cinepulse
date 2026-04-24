@@ -31,6 +31,7 @@ public class Movie {
 
     private String director;
 
+    @Column(name = "movie_cast")
     private String cast;
 
     @Column(columnDefinition = "TEXT")
