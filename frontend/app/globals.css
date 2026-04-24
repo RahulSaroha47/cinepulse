@@ -1,0 +1,64 @@
+@import "tailwindcss";
+
+@theme {
+  /* Fonts */
+  --font-heading:   var(--font-anton);
+  --font-body:      var(--font-cormorant);
+  --font-code:      var(--font-space-mono);
+
+  /* Colors */
+  --color-cp-bg:      #08080f;
+  --color-cp-surface: #0f0f1a;
+  --color-cp-border:  #1e1e2e;
+  --color-cp-red:     #e63946;
+  --color-cp-gold:    #f4c430;
+  --color-cp-text:    #f1f0fb;
+  --color-cp-muted:   #6b7280;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  background-color: #08080f;
+  color: #f1f0fb;
+  font-family: var(--font-cormorant), serif;
+}
+
+/* Shared button utilities */
+.btn-primary {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: #e63946;
+  color: #fff;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-primary:hover { background: #cf2f3b; }
+
+.btn-ghost {
+  font-family: var(--font-space-mono), monospace;
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  background: rgba(255,255,255,.07);
+  color: #f1f0fb;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 5px;
+  padding: 10px 22px;
+  cursor: pointer;
+  transition: background .2s;
+}
+.btn-ghost:hover { background: rgba(255,255,255,.12); }
+
+input:-webkit-autofill,
+input:-webkit-autofill:focus {
+  transition: background-color 9999s ease-in-out 0s;
+  -webkit-text-fill-color: #f1f0fb;
+}
