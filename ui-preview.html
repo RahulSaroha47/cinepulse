@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CinePulse — Auth UI Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #08080f;
+      color: #f1f0fb;
+      font-family: 'Cormorant Garamond', serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ── PREVIEW NAV ── */
+    .preview-nav {
+      position: fixed;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      gap: 4px;
+      background: rgba(8,8,15,0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 4px;
+    }
+    .preview-nav button {
+      background: none;
+      border: none;
+      padding: 0.4rem 1.2rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.4);
+      cursor: pointer;
+      border-radius: 100px;
+      transition: all 0.2s;
+    }
+    .preview-nav button.active {
+      background: #e63946;
+      color: #fff;
+    }
+
+    /* ══════════════════════════════════════════
+       SPLIT LAYOUT
+    ══════════════════════════════════════════ */
+    .auth-screen {
+      display: none;
+      height: 100vh;
+      width: 100%;
+    }
+    .auth-screen.active { display: flex; }
+
+    /* ── LEFT PANEL (FORM) ── */
+    .left-panel {
+      width: 42%;
+      min-width: 420px;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3rem 3.5rem;
+      position: relative;
+      background: linear-gradient(135deg, #08080f 0%, #0d0b18 100%);
+      z-index: 2;
+    }
+
+    /* Subtle noise texture */
+    .left-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+      pointer-events: none;
+      opacity: 0.4;
+    }
+
+    /* Accent glow top-left */
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: -100px;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(230,57,70,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── BRAND ── */
+    .brand {
+      margin-bottom: 2.5rem;
+      position: relative;
+      z-index: 1;
+    }
+    .brand-name {
+      font-family: 'Anton', sans-serif;
+      font-size: 1.75rem;
+      letter-spacing: 0.08em;
+      line-height: 1;
+    }
+    .brand-name em {
+      color: #e63946;
+      font-style: normal;
+    }
+    .brand-tagline {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 0.8rem;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: 0.2em;
+      margin-top: 0.3rem;
+    }
+
+    /* ── HEADING ── */
+    .form-heading {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 1.75rem;
+    }
+    .form-heading h1 {
+      font-family: 'Anton', sans-serif;
+      font-size: 2.25rem;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      margin-bottom: 0.5rem;
+    }
+    .form-heading p {
+      font-size: 1.05rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ── FORM FIELDS ── */
+    .form-body {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .field label {
+      display: block;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.35);
+      margin-bottom: 0.5rem;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+    .input-wrap svg {
+      position: absolute;
+      left: 0.9rem;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 15px;
+      height: 15px;
+      stroke: rgba(255,255,255,0.2);
+      fill: none;
+      stroke-width: 1.5;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 6px;
+      padding: 0.75rem 0.9rem 0.75rem 2.5rem;
+      color: #f1f0fb;
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.05rem;
+      font-weight: 400;
+      outline: none;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    input::placeholder { color: rgba(255,255,255,0.15); }
+    input:focus {
+      border-color: rgba(230,57,70,0.5);
+      background: rgba(230,57,70,0.04);
+    }
+
+    .field-error input {
+      border-color: rgba(230,57,70,0.6);
+    }
+    .field-error .err-msg {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      color: #e63946;
+      letter-spacing: 0.05em;
+      margin-top: 0.35rem;
+      display: block;
+    }
+
+    /* Password strength */
+    .strength {
+      margin-top: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .strength-bars {
+      display: flex;
+      gap: 3px;
+      flex: 1;
+    }
+    .strength-bars span {
+      flex: 1;
+      height: 2px;
+      border-radius: 2px;
+      background: rgba(255,255,255,0.1);
+      transition: background 0.3s;
+    }
+    .strength-bars span.s1 { background: #e63946; }
+    .strength-bars span.s2 { background: #f4c430; }
+    .strength-bars span.s3 { background: #22c55e; }
+    .strength-label {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.58rem;
+      color: rgba(255,255,255,0.3);
+      white-space: nowrap;
+    }
+
+    /* ── SUBMIT ── */
+    .btn-submit {
+      width: 100%;
+      margin-top: 0.5rem;
+      padding: 0.85rem;
+      background: #e63946;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-family: 'Anton', sans-serif;
+      font-size: 1rem;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.2s;
+    }
+    .btn-submit::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 60%);
+    }
+    .btn-submit:hover { background: #cf2f3b; }
+
+    /* ── SWITCH ── */
+    .switch-row {
+      text-align: center;
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.35);
+      margin-top: 1.25rem;
+      position: relative;
+      z-index: 1;
+    }
+    .switch-row a {
+      color: #f4c430;
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .switch-row a:hover { text-decoration: underline; }
+
+    /* ── RIGHT PANEL (VISUAL) ── */
+    .right-panel {
+      flex: 1;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Left-side gradient fade */
+    .right-panel::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 220px;
+      height: 100%;
+      background: linear-gradient(to right, #08080f 0%, transparent 100%);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Top + bottom vignette */
+    .right-panel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, #08080f 0%, transparent 15%, transparent 85%, #08080f 100%);
+      z-index: 3;
+      pointer-events: none;
+    }
+
+    /* Overlay tint */
+    .right-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(8,8,15,0.45);
+      z-index: 2;
+    }
+
+    /* Overlay text */
+    .right-text {
+      position: absolute;
+      bottom: 3rem;
+      right: 3rem;
+      text-align: right;
+      z-index: 4;
+    }
+    .right-text .quote {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 1.5rem;
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.7);
+      line-height: 1.4;
+      max-width: 320px;
+    }
+    .right-text .quote-attr {
+      font-family: 'Space Mono', monospace;
+      font-size: 0.6rem;
+      letter-spacing: 0.15em;
+      color: rgba(255,255,255,0.25);
+      margin-top: 0.75rem;
+      text-transform: uppercase;
+    }
+
+    /* ── POSTER GRID ── */
+    .poster-grid {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      gap: 10px;
+      padding: 0 10px;
+      align-items: center;
+      transform: rotate(-4deg) scale(1.1);
+    }
+
+    .poster-col {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .poster-col:nth-child(even) {
+      margin-top: -60px;
+    }
+
+    .poster {
+      width: 130px;
+      border-radius: 6px;
+      overflow: hidden;
+      flex-shrink: 0;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+      transition: transform 0.3s;
+    }
+
+    .poster img {
+      width: 100%;
+      height: 195px;
+      object-fit: cover;
+      display: block;
+      filter: saturate(0.85) contrast(1.05);
+    }
+
+    /* Golden ratio label on some posters */
+    .poster-label {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      background: rgba(8,8,15,0.8);
+      border-radius: 3px;
+      padding: 2px 6px;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.08em;
+      color: #f4c430;
+    }
+    .poster-wrap {
+      position: relative;
+    }
+
+    /* ── STAT CHIPS on right panel ── */
+    .stat-chips {
+      position: absolute;
+      top: 2.5rem;
+      right: 2.5rem;
+      z-index: 4;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+    .chip {
+      background: rgba(8,8,15,0.75);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      padding: 0.35rem 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Space Mono', monospace;
+      font-size: 0.62rem;
+      color: rgba(255,255,255,0.6);
+      letter-spacing: 0.05em;
+    }
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #e63946;
+      animation: pulse 2s infinite;
+    }
+    .chip-dot.gold { background: #f4c430; animation-delay: 0.5s; }
+    .chip-dot.green { background: #22c55e; animation-delay: 1s; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Preview switcher -->
+  <nav class="preview-nav">
+    <button class="active" onclick="show('login', this)">Login</button>
+    <button onclick="show('signup', this)">Signup</button>
+  </nav>
+
+
+  <!-- ═══════════════════ LOGIN ═══════════════════ -->
+  <div class="auth-screen active" id="login">
+    <div class="left-panel">
+      <div class="brand">
+        <div class="brand-name">CINE<em>PULSE</em></div>
+        <div class="brand-tagline">Where every frame lives forever</div>
+      </div>
+
+      <div class="form-heading">
+        <h1>WELCOME<br/>BACK</h1>
+        <p>Sign in to continue your journey</p>
+      </div>
+
+      <div class="form-body">
+        <div class="field">
+          <label>Email Address</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" placeholder="you@example.com" />
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" placeholder="••••••••" />
+          </div>
+        </div>
+
+        <button class="btn-submit">SIGN IN</button>
+      </div>
+
+      <div class="switch-row" style="margin-top:1.5rem;">
+        New to CinePulse? <a onclick="show('signup', document.querySelectorAll('.preview-nav button')[1])">Create an account</a>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="right-overlay"></div>
+      <div class="stat-chips">
+        <div class="chip"><span class="chip-dot"></span> 24k films tracked today</div>
+        <div class="chip"><span class="chip-dot gold"></span> Daily quiz live</div>
+        <div class="chip"><span class="chip-dot green"></span> 3.2k members online</div>
+      </div>
+      <div class="poster-grid" id="grid-login"></div>
+      <div class="right-text">
+        <div class="quote">"Cinema is a mirror by which we often see ourselves."</div>
+        <div class="quote-attr">— Martin Scorsese</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════ SIGNUP ═══════════════════ -->
+  <div class="auth-screen" id="signup">
+    <div class="left-panel">
+      <div class="brand">
+        <div class="brand-name">CINE<em>PULSE</em></div>
+        <div class="brand-tagline">Where every frame lives forever</div>
+      </div>
+
+      <div class="form-heading">
+        <h1>JOIN THE<br/>COMMUNITY</h1>
+        <p>Track, rate, and discover films</p>
+      </div>
+
+      <div class="form-body">
+        <div class="field">
+          <label>Username</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input type="text" placeholder="cinephile_42" />
+          </div>
+        </div>
+
+        <div class="field field-error">
+          <label>Email Address</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            <input type="email" value="bademail" />
+          </div>
+          <span class="err-msg">Invalid email format</span>
+        </div>
+
+        <div class="field">
+          <label>Password</label>
+          <div class="input-wrap">
+            <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" value="hunter2" />
+          </div>
+          <div class="strength">
+            <div class="strength-bars">
+              <span class="s1"></span><span></span><span></span><span></span>
+            </div>
+            <span class="strength-label">Weak</span>
+          </div>
+        </div>
+
+        <button class="btn-submit">CREATE ACCOUNT</button>
+      </div>
+
+      <div class="switch-row" style="margin-top:1.5rem;">
+        Already have an account? <a onclick="show('login', document.querySelectorAll('.preview-nav button')[0])">Sign in</a>
+      </div>
+    </div>
+
+    <div class="right-panel">
+      <div class="right-overlay"></div>
+      <div class="stat-chips">
+        <div class="chip"><span class="chip-dot"></span> Free forever</div>
+        <div class="chip"><span class="chip-dot gold"></span> 9 movie categories</div>
+        <div class="chip"><span class="chip-dot green"></span> AI recommendations</div>
+      </div>
+      <div class="poster-grid" id="grid-signup"></div>
+      <div class="right-text">
+        <div class="quote">"Film is not a slice of life, but a piece of cake."</div>
+        <div class="quote-attr">— Alfred Hitchcock</div>
+      </div>
+    </div>
+  </div>
+
+
+  <script>
+    const TMDB = 'https://image.tmdb.org/t/p/w500';
+    const posters = [
+      { path: '/hr9rjR3J0xBBKmlJ4n3gHId9ccx.jpg', title: 'Animal' },
+      { path: '/qJ2tW6WMUDux911r6m7haRef0WH.jpg', title: 'The Dark Knight' },
+      { path: '/gmSRHU1Wtiatj8KoyVt8rT9ockx.jpg', title: '3 Idiots' },
+      { path: '/xlaY2zyzMfkhk0HSC5VUwzoZPU1.jpg', title: 'Inception' },
+      { path: '/tjpiEnZBUAA8pdNPRKa5vP2Zpqw.jpg', title: 'RRR' },
+      { path: '/ulzhLuWrPK07P1YkdWQLZnQh1JL.jpg', title: 'Avengers: Endgame' },
+      { path: '/unqiPjtc6CGqs13zho7ZvWU85zu.jpg', title: 'Kabir Singh' },
+      { path: '/yQvGrMoipbRoddT0ZR8tPoR7NfX.jpg', title: 'Interstellar' },
+      { path: '/z2x2Y4tncefsIU7h82gmUM5vnBJ.jpg', title: 'PK' },
+      { path: '/gKY6q7SjCkAU6FqvqWybDYgUKIF.jpg', title: 'Avatar' },
+      { path: '/1CoKNi3XVyijPCvy0usDbSWEXAg.jpg', title: 'Dangal' },
+      { path: '/saHP97rTPS5eLmrLQEcANmKrsFl.jpg', title: 'Forrest Gump' },
+      { path: '/q1wkN4VQuBTj1AeyTLLz2w6awMA.jpg', title: 'Sanju' },
+      { path: '/8FHOtUpNIk5ZPEay2N2EY5lrxkv.jpg', title: 'Dhurandhar' },
+      { path: '/56snL7jpuKS80WBSXJCg59XdvM3.jpg', title: 'Chhichhore' },
+      { path: '/OjJ2eZFMr0InHxjYCQXwxDoo4v.jpg',  title: 'Munna Bhai MBBS' },
+      { path: '/yUSL24kpHc9Nls4Pohia4shgcIM.jpg', title: 'Swades' },
+    ];
+
+    function buildGrid(containerId) {
+      const container = document.getElementById(containerId);
+      const cols = 7;
+      let idx = 0;
+      for (let c = 0; c < cols; c++) {
+        const col = document.createElement('div');
+        col.className = 'poster-col';
+        const count = 4 + (c % 2);
+        for (let r = 0; r < count; r++) {
+          const movie = posters[idx % posters.length];
+          idx++;
+          const wrap = document.createElement('div');
+          wrap.className = 'poster-wrap';
+          wrap.innerHTML = `
+            <div class="poster">
+              <img src="${TMDB}${movie.path}" alt="${movie.title}" loading="lazy" title="${movie.title}" />
+            </div>
+          `;
+          col.appendChild(wrap);
+        }
+        container.appendChild(col);
+      }
+    }
+
+    buildGrid('grid-login');
+    buildGrid('grid-signup');
+
+    function show(id, btn) {
+      document.querySelectorAll('.auth-screen').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.preview-nav button').forEach(b => b.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      if (btn) btn.classList.add('active');
+    }
+  </script>
+</body>
+</html>

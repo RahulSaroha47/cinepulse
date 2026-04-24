@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CinePulse — Reviews UI Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cp-bg:      #08080f;
+    --cp-surface: #0f0f1a;
+    --cp-border:  #1e1e2e;
+    --cp-red:     #e63946;
+    --cp-gold:    #f4c430;
+    --cp-text:    #f1f0fb;
+    --cp-muted:   #6b7280;
+  }
+
+  body { background: var(--cp-bg); color: var(--cp-text); font-family: 'Cormorant Garamond', serif; }
+  .font-heading { font-family: 'Anton', sans-serif; }
+  .font-code    { font-family: 'Space Mono', monospace; }
+  .font-body    { font-family: 'Cormorant Garamond', serif; }
+
+  /* ── NAV ── */
+  nav {
+    height: 60px; display: flex; align-items: center; padding: 0 40px;
+    background: rgba(8,8,15,.95); border-bottom: 1px solid rgba(255,255,255,.07);
+    position: sticky; top: 0; z-index: 50;
+    font-family: 'Anton', sans-serif; font-size: 1.2rem; letter-spacing: .1em;
+  }
+  nav span { color: var(--cp-red); }
+  .nav-tabs { display: flex; gap: 0; margin-left: 40px; }
+  .tab {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .14em; padding: 6px 18px; cursor: pointer; border-bottom: 2px solid transparent;
+    color: var(--cp-muted); transition: all .2s;
+  }
+  .tab.active { color: var(--cp-red); border-bottom-color: var(--cp-red); }
+  .tab:hover:not(.active) { color: var(--cp-text); }
+
+  /* ── SECTION WRAPPERS ── */
+  .section { display: none; }
+  .section.active { display: block; }
+
+  /* ── SHARED UTILS ── */
+  .chip {
+    font-family: 'Space Mono', monospace; font-size: 9px; letter-spacing: .1em;
+    text-transform: uppercase; padding: 3px 10px; border-radius: 4px;
+    background: rgba(255,255,255,.06); color: var(--cp-muted);
+  }
+  .stars { color: var(--cp-gold); font-size: 14px; letter-spacing: 2px; }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-family: 'Anton', sans-serif;
+    font-size: 11px; background: linear-gradient(135deg, #e63946, #8b1c24); shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════
+     OPTION A — Letterboxd Style
+  ══════════════════════════════════════════ */
+  #optA {
+    min-height: 100vh;
+    background: linear-gradient(180deg, rgba(8,8,15,0) 0%, var(--cp-bg) 400px), var(--cp-bg);
+    position: relative;
+  }
+  #optA .bg-blur {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image: url('https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg');
+    background-size: cover; background-position: center;
+    filter: blur(60px) brightness(.18) saturate(.6);
+  }
+  #optA .content {
+    position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 40px 40px 80px;
+  }
+  #optA .layout { display: grid; grid-template-columns: 240px 1fr; gap: 40px; }
+
+  /* Left panel */
+  #optA .poster {
+    width: 240px; border-radius: 10px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.6); border: 1px solid var(--cp-border);
+  }
+  #optA .poster img { width: 100%; display: block; }
+  #optA .meta-block { margin-top: 20px; }
+  #optA .meta-row { display: flex; flex-direction: column; gap: 10px; }
+  #optA .meta-item label {
+    font-family: 'Space Mono', monospace; font-size: 8px; text-transform: uppercase;
+    letter-spacing: .14em; color: var(--cp-muted);
+  }
+  #optA .meta-item value {
+    font-family: 'Cormorant Garamond', serif; font-size: 14px; color: var(--cp-text);
+    display: block; margin-top: 2px;
+  }
+  #optA .meta-divider { height: 1px; background: var(--cp-border); margin: 10px 0; }
+
+  /* Right panel */
+  #optA .right-panel {}
+  #optA .movie-title {
+    font-family: 'Anton', sans-serif; font-size: 2.4rem; letter-spacing: .04em; line-height: 1;
+  }
+  #optA .tagline {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.1rem;
+    color: var(--cp-muted); margin-top: 6px;
+  }
+  #optA .rating-bar {
+    display: flex; align-items: center; gap: 16px; margin-top: 20px;
+    padding: 16px 20px; background: var(--cp-surface); border: 1px solid var(--cp-border);
+    border-radius: 10px;
+  }
+  #optA .big-rating {
+    font-family: 'Anton', sans-serif; font-size: 2.8rem; color: var(--cp-gold); line-height: 1;
+  }
+  #optA .review-section { margin-top: 28px; }
+  #optA .section-label {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .15em; color: var(--cp-muted); margin-bottom: 14px;
+  }
+  #optA .review-form {
+    background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 10px;
+    padding: 18px; margin-bottom: 20px;
+  }
+  #optA .star-picker { display: flex; gap: 6px; margin-bottom: 12px; cursor: pointer; }
+  #optA .star-picker span { font-size: 20px; color: rgba(244,196,48,.25); transition: color .15s; }
+  #optA .star-picker span.lit { color: var(--cp-gold); }
+  #optA textarea {
+    width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--cp-border);
+    border-radius: 6px; color: var(--cp-text); font-family: 'Cormorant Garamond', serif;
+    font-size: 15px; padding: 10px 12px; resize: none; outline: none;
+  }
+  #optA textarea::placeholder { color: var(--cp-muted); }
+  #optA .form-footer { display: flex; justify-content: flex-end; margin-top: 10px; }
+  #optA .btn-submit {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; color: #fff; background: var(--cp-red); border: none;
+    padding: 9px 22px; border-radius: 5px; cursor: pointer;
+  }
+  #optA .review-card {
+    background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 10px;
+    padding: 16px 18px; margin-bottom: 12px;
+  }
+  #optA .review-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  #optA .review-user { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; }
+  #optA .review-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--cp-muted); margin-left: auto; }
+  #optA .review-body { font-family: 'Cormorant Garamond', serif; font-size: 15px; color: rgba(241,240,251,.75); line-height: 1.6; }
+
+  /* ══════════════════════════════════════════
+     OPTION B — Cinema Spotlight
+  ══════════════════════════════════════════ */
+  #optB { min-height: 100vh; }
+  #optB .hero {
+    position: relative; height: 420px; overflow: hidden;
+  }
+  #optB .hero-bg {
+    position: absolute; inset: 0;
+    background-image: url('https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg');
+    background-size: cover; background-position: top;
+    filter: brightness(.35) saturate(.7);
+  }
+  #optB .hero-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to right, rgba(8,8,15,.97) 40%, rgba(8,8,15,.4) 100%);
+    display: flex; align-items: flex-end; padding: 48px;
+  }
+  #optB .hero-text { max-width: 560px; }
+  #optB .hero-badge {
+    font-family: 'Space Mono', monospace; font-size: 9px; text-transform: uppercase;
+    letter-spacing: .18em; color: var(--cp-red); display: flex; align-items: center; gap: 6px;
+    margin-bottom: 12px;
+  }
+  #optB .hero-badge::before {
+    content: ''; width: 5px; height: 5px; background: var(--cp-red);
+    border-radius: 50%; animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+  #optB .hero-title {
+    font-family: 'Anton', sans-serif; font-size: 3rem; letter-spacing: .04em; line-height: 1;
+  }
+  #optB .hero-tagline {
+    font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 1.15rem;
+    color: rgba(241,240,251,.55); margin-top: 8px;
+  }
+  #optB .info-strip {
+    display: flex; gap: 0; background: var(--cp-surface); border-bottom: 1px solid var(--cp-border);
+  }
+  #optB .info-cell {
+    flex: 1; padding: 18px 28px; border-right: 1px solid var(--cp-border); text-align: center;
+  }
+  #optB .info-cell:last-child { border-right: none; }
+  #optB .info-label {
+    font-family: 'Space Mono', monospace; font-size: 8px; text-transform: uppercase;
+    letter-spacing: .14em; color: var(--cp-muted); margin-bottom: 4px;
+  }
+  #optB .info-val {
+    font-family: 'Anton', sans-serif; font-size: 1rem; letter-spacing: .04em;
+  }
+  #optB .body { max-width: 1100px; margin: 0 auto; padding: 40px 40px 80px; }
+  #optB .reviews-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px;
+  }
+  #optB .agg-rating {
+    display: flex; align-items: center; gap: 12px;
+  }
+  #optB .agg-num {
+    font-family: 'Anton', sans-serif; font-size: 3rem; color: var(--cp-gold); line-height: 1;
+  }
+  #optB .write-btn {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; color: #fff; background: var(--cp-red); border: none;
+    padding: 10px 22px; border-radius: 5px; cursor: pointer;
+  }
+  #optB .masonry {
+    columns: 2; column-gap: 16px;
+  }
+  #optB .m-card {
+    break-inside: avoid; background: var(--cp-surface); border: 1px solid var(--cp-border);
+    border-radius: 10px; padding: 18px; margin-bottom: 16px;
+  }
+  #optB .m-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  #optB .m-user { font-family: 'Cormorant Garamond', serif; font-size: 15px; font-weight: 600; }
+  #optB .m-date { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--cp-muted); margin-left: auto; }
+  #optB .m-body { font-family: 'Cormorant Garamond', serif; font-size: 15px; color: rgba(241,240,251,.75); line-height: 1.65; }
+  #optB .fab {
+    position: fixed; bottom: 32px; right: 32px; z-index: 99;
+    background: var(--cp-red); color: #fff; border: none; border-radius: 50px;
+    font-family: 'Space Mono', monospace; font-size: 11px; text-transform: uppercase;
+    letter-spacing: .1em; padding: 14px 22px; cursor: pointer;
+    box-shadow: 0 4px 24px rgba(230,57,70,.4);
+  }
+
+  /* ══════════════════════════════════════════
+     OPTION C — Dashboard Extension
+  ══════════════════════════════════════════ */
+  #optC { min-height: 100vh; }
+  #optC .page { max-width: 1200px; margin: 0 auto; padding: 32px 40px 80px; }
+  #optC .search-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+  }
+  #optC input[type=text] {
+    flex: 1; background: var(--cp-surface); border: 1px solid var(--cp-border);
+    border-radius: 8px; color: var(--cp-text); font-family: 'Space Mono', monospace;
+    font-size: 12px; padding: 10px 16px; outline: none;
+  }
+  #optC input[type=text]::placeholder { color: var(--cp-muted); }
+  #optC .movies-grid {
+    display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-bottom: 32px;
+  }
+  #optC .movie-tile {
+    border-radius: 8px; overflow: hidden; border: 1px solid var(--cp-border);
+    cursor: pointer; position: relative; group: true;
+    transition: border-color .2s, transform .2s;
+  }
+  #optC .movie-tile:hover { border-color: rgba(255,255,255,.18); transform: translateY(-2px); }
+  #optC .movie-tile.selected { border-color: var(--cp-red); }
+  #optC .tile-img { width: 100%; height: 140px; object-fit: cover; display: block; filter: saturate(.85); }
+  #optC .tile-overlay {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(8,8,15,.95) 0%, transparent 50%);
+    opacity: 0; transition: opacity .2s;
+    display: flex; align-items: flex-end; padding: 8px;
+  }
+  #optC .movie-tile:hover .tile-overlay,
+  #optC .movie-tile.selected .tile-overlay { opacity: 1; }
+  #optC .tile-title { font-family: 'Anton', sans-serif; font-size: 11px; letter-spacing: .04em; line-height: 1.2; }
+  #optC .tile-stars { font-size: 10px; color: var(--cp-gold); }
+
+  /* Side panel */
+  #optC .panel-wrap { display: grid; grid-template-columns: 1fr 420px; gap: 24px; }
+  #optC .side-panel {
+    background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 12px;
+    overflow: hidden;
+  }
+  #optC .panel-poster { position: relative; height: 200px; overflow: hidden; }
+  #optC .panel-poster img {
+    width: 100%; height: 100%; object-fit: cover; filter: brightness(.5) saturate(.7);
+  }
+  #optC .panel-poster-text {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    justify-content: flex-end; padding: 16px;
+    background: linear-gradient(to top, rgba(8,8,15,.95) 0%, transparent 60%);
+  }
+  #optC .panel-title { font-family: 'Anton', sans-serif; font-size: 1.4rem; letter-spacing: .04em; }
+  #optC .panel-year { font-family: 'Space Mono', monospace; font-size: 9px; color: var(--cp-muted); margin-top: 2px; }
+  #optC .panel-body { padding: 16px; }
+  #optC .panel-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  #optC .panel-review-toggle {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; color: var(--cp-red); background: rgba(230,57,70,.1);
+    border: 1px solid rgba(230,57,70,.25); border-radius: 5px; padding: 8px 14px;
+    cursor: pointer; width: 100%; margin-bottom: 14px;
+  }
+  #optC .inline-form { margin-bottom: 14px; }
+  #optC .inline-stars { display: flex; gap: 6px; margin-bottom: 10px; cursor: pointer; }
+  #optC .inline-stars span { font-size: 18px; color: var(--cp-gold); }
+  #optC textarea {
+    width: 100%; background: rgba(255,255,255,.04); border: 1px solid var(--cp-border);
+    border-radius: 6px; color: var(--cp-text); font-family: 'Cormorant Garamond', serif;
+    font-size: 14px; padding: 9px 11px; resize: none; outline: none;
+  }
+  #optC .inline-submit {
+    font-family: 'Space Mono', monospace; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .1em; color: #fff; background: var(--cp-red); border: none;
+    padding: 8px 18px; border-radius: 5px; cursor: pointer; margin-top: 8px; float: right;
+  }
+  #optC .panel-reviews { border-top: 1px solid var(--cp-border); padding: 14px 16px; }
+  #optC .p-review { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--cp-border); }
+  #optC .p-review:last-child { border-bottom: none; }
+  #optC .p-user { font-family: 'Cormorant Garamond', serif; font-size: 13px; font-weight: 600; }
+  #optC .p-stars { font-size: 11px; color: var(--cp-gold); }
+  #optC .p-body { font-family: 'Cormorant Garamond', serif; font-size: 13px; color: rgba(241,240,251,.65); margin-top: 2px; line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<nav>
+  CINE<span>PULSE</span>
+  <div class="nav-tabs">
+    <div class="tab active" onclick="show('optA',this)">Option A — Letterboxd</div>
+    <div class="tab" onclick="show('optB',this)">Option B — Cinema Spotlight</div>
+    <div class="tab" onclick="show('optC',this)">Option C — Dashboard Panel</div>
+  </div>
+</nav>
+
+<!-- ══════════════════════════════════════════
+     OPTION A
+══════════════════════════════════════════ -->
+<div id="optA" class="section active">
+  <div class="bg-blur"></div>
+  <div class="content">
+    <div class="layout">
+
+      <!-- LEFT -->
+      <div>
+        <div class="poster">
+          <img src="https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" alt="poster" />
+        </div>
+        <div class="meta-block">
+          <div class="meta-row">
+            <div class="meta-item">
+              <label>Director</label>
+              <value>Sanjay Leela Bhansali</value>
+            </div>
+            <div class="meta-divider"></div>
+            <div class="meta-item">
+              <label>Genre</label>
+              <value>Drama · Romance</value>
+            </div>
+            <div class="meta-divider"></div>
+            <div class="meta-item">
+              <label>Release Year</label>
+              <value>1998</value>
+            </div>
+            <div class="meta-divider"></div>
+            <div class="meta-item">
+              <label>Cast</label>
+              <value>Shah Rukh Khan · Aishwarya Rai · Salman Khan</value>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="right-panel">
+        <div class="movie-title">KUCh KUCh HOTA HAI</div>
+        <div class="tagline">"Pyaar dosti hai..."</div>
+
+        <div class="rating-bar">
+          <div class="big-rating">4.2</div>
+          <div>
+            <div class="stars">★★★★☆</div>
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--cp-muted);margin-top:3px;">128 reviews</div>
+          </div>
+          <div style="margin-left:auto;display:flex;gap:8px;">
+            <span class="chip">Drama</span>
+            <span class="chip">1998</span>
+            <span class="chip">Hindi</span>
+          </div>
+        </div>
+
+        <div style="font-family:'Cormorant Garamond',serif;font-size:15px;color:rgba(241,240,251,.6);margin-top:18px;line-height:1.7;">
+          A widower's daughter discovers that her late mother's greatest wish was for her father to reunite with his college sweetheart. A sweeping tale of love, loss, and second chances set across decades.
+        </div>
+
+        <div class="review-section">
+          <div class="section-label">✍ Write a Review</div>
+          <div class="review-form">
+            <div class="star-picker" id="starA">
+              <span onclick="setStars('starA',1)">★</span>
+              <span onclick="setStars('starA',2)">★</span>
+              <span onclick="setStars('starA',3)" class="lit">★</span>
+              <span onclick="setStars('starA',4)" class="lit">★</span>
+              <span onclick="setStars('starA',5)">★</span>
+            </div>
+            <textarea rows="3" placeholder="What did you think of this film?"></textarea>
+            <div class="form-footer">
+              <button class="btn-submit">Post Review</button>
+            </div>
+          </div>
+
+          <div class="section-label">💬 Community Reviews</div>
+
+          <div class="review-card">
+            <div class="review-header">
+              <div class="avatar">RK</div>
+              <div class="review-user">RahulK</div>
+              <div class="stars" style="font-size:11px;">★★★★★</div>
+              <div class="review-date">Apr 10, 2026</div>
+            </div>
+            <div class="review-body">An absolute masterpiece of Indian cinema. Bhansali's direction paired with SRK's charm makes this an eternally rewatchable film. The college flashback sequences are pure magic.</div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);">PM</div>
+              <div class="review-user">PriyaM</div>
+              <div class="stars" style="font-size:11px;">★★★★☆</div>
+              <div class="review-date">Apr 8, 2026</div>
+            </div>
+            <div class="review-body">Still holds up after all these years. The music, the costumes, the drama — everything is dialled up to 11 and I love it for that. Peak 90s Bollywood.</div>
+          </div>
+
+          <div class="review-card">
+            <div class="review-header">
+              <div class="avatar" style="background:linear-gradient(135deg,#059669,#065f46);">AS</div>
+              <div class="review-user">AmitS</div>
+              <div class="stars" style="font-size:11px;">★★★☆☆</div>
+              <div class="review-date">Apr 5, 2026</div>
+            </div>
+            <div class="review-body">Iconic songs and performances but the plot has some serious logic gaps if you think too hard. Best enjoyed as pure nostalgia fuel.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     OPTION B
+══════════════════════════════════════════ -->
+<div id="optB" class="section">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-overlay">
+      <div class="hero-text">
+        <div class="hero-badge">Bollywood Cinema</div>
+        <div class="hero-title">KUCH KUCH<br>HOTA HAI</div>
+        <div class="hero-tagline">"Pyaar dosti hai..."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-strip">
+    <div class="info-cell">
+      <div class="info-label">Director</div>
+      <div class="info-val">Karan Johar</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-label">Genre</div>
+      <div class="info-val">Drama · Romance</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-label">Year</div>
+      <div class="info-val">1998</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-label">Language</div>
+      <div class="info-val">Hindi</div>
+    </div>
+    <div class="info-cell">
+      <div class="info-label">Avg Rating</div>
+      <div class="info-val" style="color:var(--cp-gold);">★ 4.2 / 5</div>
+    </div>
+  </div>
+
+  <div class="body">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:16px;color:rgba(241,240,251,.6);line-height:1.75;margin-bottom:36px;max-width:720px;">
+      A widower's daughter discovers that her late mother's greatest wish was for her father to reunite with his college sweetheart. A sweeping tale of love, loss, and second chances.
+    </div>
+
+    <div class="reviews-header">
+      <div>
+        <div style="font-family:'Space Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.15em;color:var(--cp-muted);margin-bottom:8px;">💬 Community Reviews</div>
+        <div class="agg-rating">
+          <div class="agg-num">4.2</div>
+          <div>
+            <div class="stars">★★★★☆</div>
+            <div style="font-family:'Space Mono',monospace;font-size:9px;color:var(--cp-muted);margin-top:2px;">128 reviews</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="masonry">
+      <div class="m-card">
+        <div class="m-header">
+          <div class="avatar">RK</div>
+          <div>
+            <div class="m-user">RahulK</div>
+            <div class="stars" style="font-size:11px;">★★★★★</div>
+          </div>
+          <div class="m-date">Apr 10</div>
+        </div>
+        <div class="m-body">An absolute masterpiece of Indian cinema. Bhansali's direction paired with SRK's charm makes this eternally rewatchable. The college flashback sequences are pure magic.</div>
+      </div>
+      <div class="m-card">
+        <div class="m-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#7c3aed,#4c1d95);">PM</div>
+          <div>
+            <div class="m-user">PriyaM</div>
+            <div class="stars" style="font-size:11px;">★★★★☆</div>
+          </div>
+          <div class="m-date">Apr 8</div>
+        </div>
+        <div class="m-body">Still holds up after all these years. Peak 90s Bollywood — the music, the drama, everything dialled to 11.</div>
+      </div>
+      <div class="m-card">
+        <div class="m-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#059669,#065f46);">AS</div>
+          <div>
+            <div class="m-user">AmitS</div>
+            <div class="stars" style="font-size:11px;">★★★☆☆</div>
+          </div>
+          <div class="m-date">Apr 5</div>
+        </div>
+        <div class="m-body">Iconic songs and performances but the plot has some serious logic gaps. Best enjoyed as nostalgia fuel.</div>
+      </div>
+      <div class="m-card">
+        <div class="m-header">
+          <div class="avatar" style="background:linear-gradient(135deg,#d97706,#92400e);">NK</div>
+          <div>
+            <div class="m-user">NehaK</div>
+            <div class="stars" style="font-size:11px;">★★★★★</div>
+          </div>
+          <div class="m-date">Apr 3</div>
+        </div>
+        <div class="m-body">Watched this with my mother every Diwali growing up. Some films transcend cinema — they become memory. This is one of them. The ending still gets me every single time.</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="fab">✍ Write a Review</button>
+</div>
+
+<!-- ══════════════════════════════════════════
+     OPTION C
+══════════════════════════════════════════ -->
+<div id="optC" class="section">
+  <div class="page">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px;">
+      <span style="font-family:'Anton',sans-serif;font-size:1.4rem;letter-spacing:.04em;">🎬 Bollywood Films</span>
+      <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--cp-muted);">Click a poster to review</span>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" placeholder="Search films..." />
+    </div>
+
+    <div class="panel-wrap">
+      <!-- Movie grid (left) -->
+      <div>
+        <div class="movies-grid">
+          <div class="movie-tile selected">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">KUCH KUCH</div><div class="tile-stars">★★★★☆</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/nBNKBdU6HVeJeGjHMfHJO9oQzby.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">DILWALE</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/9N0cEbMoUZBhxHFbblVP1ohHBFj.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">LAGAAN</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/5gCGtMdEpfJsOCJD1pTLXRLtcPM.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">DEVDAS</div><div class="tile-stars">★★★★☆</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/b2mqSepNQ7rB0z4lCfZLFHNbECl.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">3 IDIOTS</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/jispWaBKsKP9b7fO0Ud9GFbpePM.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">MUGHAL-E-AZAM</div><div class="tile-stars">★★★★☆</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/sHzBBxTBKsZQfgLSG2WNBU5ew7O.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">SHOLAY</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/pTAHABFjmqHmO8PBFsrBSiVIDPh.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">DHOBI GHAT</div><div class="tile-stars">★★★☆☆</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/jK0bDGMhGjHBqvhxlXlgxSHbcXH.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">GANGS OF WASSEYPUR</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/2CAL2433ZeIihfX1Hb2139CX0pW.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">ANDAZ APNA APNA</div><div class="tile-stars">★★★★☆</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/bvJOpyHYWACDusvQvXxKEHFNjce.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">QUEEN</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+          <div class="movie-tile">
+            <img class="tile-img" src="https://image.tmdb.org/t/p/w500/apnpY5HVdZ7WmL0D6MXYGIr43iC.jpg" />
+            <div class="tile-overlay">
+              <div><div class="tile-title">TAARE ZAMEEN PAR</div><div class="tile-stars">★★★★★</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side panel (right) -->
+      <div class="side-panel">
+        <div class="panel-poster">
+          <img src="https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg" />
+          <div class="panel-poster-text">
+            <div class="panel-title">KUCH KUCH HOTA HAI</div>
+            <div class="panel-year">1998 · Karan Johar · Drama</div>
+          </div>
+        </div>
+        <div class="panel-body">
+          <div class="panel-meta">
+            <span class="chip">Drama</span>
+            <span class="chip">Romance</span>
+            <span class="chip">Hindi</span>
+            <span style="font-family:'Space Mono',monospace;font-size:9px;color:var(--cp-gold);">★ 4.2 · 128 reviews</span>
+          </div>
+
+          <button class="panel-review-toggle">✍ Write a Review</button>
+
+          <div class="inline-form">
+            <div class="inline-stars">
+              <span>★</span><span>★</span><span>★</span><span>★</span>
+              <span style="color:rgba(244,196,48,.25);">★</span>
+            </div>
+            <textarea rows="3" placeholder="Your thoughts on this film..."></textarea>
+            <button class="inline-submit">Post</button>
+            <div style="clear:both;"></div>
+          </div>
+
+          <div class="panel-reviews">
+            <div style="font-family:'Space Mono',monospace;font-size:9px;text-transform:uppercase;letter-spacing:.14em;color:var(--cp-muted);margin-bottom:10px;">Recent Reviews</div>
+            <div class="p-review">
+              <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;">RK</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="p-user">RahulK</div>
+                  <div class="p-stars">★★★★★</div>
+                </div>
+                <div class="p-body">An absolute masterpiece. The college flashbacks are pure magic.</div>
+              </div>
+            </div>
+            <div class="p-review">
+              <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:linear-gradient(135deg,#7c3aed,#4c1d95);">PM</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="p-user">PriyaM</div>
+                  <div class="p-stars">★★★★☆</div>
+                </div>
+                <div class="p-body">Still holds up. Peak 90s Bollywood, everything dialled to 11.</div>
+              </div>
+            </div>
+            <div class="p-review">
+              <div class="avatar" style="width:28px;height:28px;font-size:10px;flex-shrink:0;background:linear-gradient(135deg,#059669,#065f46);">AS</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="p-user">AmitS</div>
+                  <div class="p-stars">★★★☆☆</div>
+                </div>
+                <div class="p-body">Best enjoyed as nostalgia fuel. Logic gaps if you look too hard.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function show(id, tab) {
+    document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    tab.classList.add('active');
+  }
+
+  function setStars(id, n) {
+    const stars = document.querySelectorAll(`#${id} span`);
+    stars.forEach((s, i) => s.classList.toggle('lit', i < n));
+  }
+</script>
+</body>
+</html>

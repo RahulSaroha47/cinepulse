@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CinePulse — Quiz Database Schema</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #08080f;
+      color: #f1f0fb;
+      font-family: 'Inter', sans-serif;
+      padding: 48px;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    .header {
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding-bottom: 24px;
+      margin-bottom: 40px;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: .04em;
+    }
+    .header h1 span { color: #e63946; }
+    .header p {
+      font-size: 13px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+    .badge {
+      display: inline-block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      padding: 3px 9px;
+      border-radius: 4px;
+      margin-left: 8px;
+      vertical-align: middle;
+    }
+
+    /* ── Section titles ── */
+    .section-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: #6b7280;
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    /* ── Writer legend ── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 12px;
+    }
+    .dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Tables grid ── */
+    .tables-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+
+    .table-card {
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .table-card.span2 { grid-column: span 2; }
+
+    .table-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+    .table-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .table-body { padding: 4px 0; }
+
+    .col-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 16px;
+      font-size: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .col-row:last-child { border-bottom: none; }
+    .col-row.pk { background: rgba(244,196,48,0.04); }
+    .col-row.fk { background: rgba(230,57,70,0.04); }
+
+    .col-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #f1f0fb;
+    }
+    .col-name .key-icon {
+      font-size: 9px;
+      margin-right: 4px;
+    }
+    .col-type {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #6b7280;
+    }
+    .col-note {
+      font-size: 10px;
+      color: #4b5563;
+      font-style: italic;
+    }
+
+    .writer-tag {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+
+    /* ── Relationships ── */
+    .rel-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 40px;
+    }
+    .rel-card {
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 16px 20px;
+    }
+    .rel-card h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .rel-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .rel-table {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      background: rgba(255,255,255,0.05);
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .rel-arrow { color: #6b7280; font-size: 14px; }
+    .rel-type { font-size: 10px; color: #6b7280; }
+
+    /* ── Flow ── */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    .flow-card {
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 10px;
+      padding: 20px;
+    }
+    .flow-card h3 {
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .endpoint {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+    .flow-step {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 12px;
+    }
+    .step-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      background: rgba(255,255,255,0.06);
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .step-text { color: #d1d5db; line-height: 1.5; }
+    .step-text code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      background: rgba(255,255,255,0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+      color: #f4c430;
+    }
+    .step-text .table-ref {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #e63946;
+    }
+
+    /* ── Design notes ── */
+    .notes-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      margin-top: 40px;
+    }
+    .note-card {
+      background: #0f0f1a;
+      border: 1px solid rgba(255,255,255,0.07);
+      border-left: 3px solid;
+      border-radius: 6px;
+      padding: 14px 16px;
+    }
+    .note-card h4 { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    .note-card p  { font-size: 11px; color: #9ca3af; line-height: 1.6; }
+
+    /* colours */
+    .c-red    { background: rgba(230,57,70,.12);   color: #e63946; }
+    .c-gold   { background: rgba(244,196,48,.12);  color: #f4c430; }
+    .c-green  { background: rgba(34,197,94,.12);   color: #22c55e; }
+    .c-purple { background: rgba(139,92,246,.12);  color: #a78bfa; }
+    .c-blue   { background: rgba(59,130,246,.12);  color: #60a5fa; }
+
+    .dot-red    { background: #e63946; }
+    .dot-gold   { background: #f4c430; }
+    .dot-green  { background: #22c55e; }
+    .dot-purple { background: #a78bfa; }
+    .dot-blue   { background: #60a5fa; }
+
+    .border-red    { border-left-color: #e63946; }
+    .border-gold   { border-left-color: #f4c430; }
+    .border-green  { border-left-color: #22c55e; }
+
+    /* print */
+    @media print {
+      body { background: #fff; color: #000; padding: 24px; }
+      .table-card, .rel-card, .flow-card, .note-card, .legend-item {
+        background: #f9f9f9; border-color: #e5e7eb;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <h1>CINE<span>PULSE</span> — Quiz Database Schema</h1>
+    <p>Table structure · Relationships · Data flow · Design decisions</p>
+  </div>
+
+  <!-- Writer Legend -->
+  <div class="section-title">Who writes each table</div>
+  <div class="legend">
+    <div class="legend-item">
+      <div class="dot dot-green"></div>
+      <strong>App Startup</strong>&nbsp;— DataSeeder (runs once on boot)
+    </div>
+    <div class="legend-item">
+      <div class="dot dot-blue"></div>
+      <strong>POST /api/auth/signup</strong>&nbsp;— AuthService
+    </div>
+    <div class="legend-item">
+      <div class="dot dot-gold"></div>
+      <strong>GET /api/quiz/today</strong>&nbsp;— QuizService (lazy, first request of the day)
+    </div>
+    <div class="legend-item">
+      <div class="dot dot-red"></div>
+      <strong>POST /api/quiz/submit</strong>&nbsp;— QuizService (on submission)
+    </div>
+    <div class="legend-item">
+      <div class="dot dot-purple"></div>
+      <strong>POST /api/quiz/submit</strong>&nbsp;— updates existing users row
+    </div>
+  </div>
+
+  <!-- Tables -->
+  <div class="section-title">Tables</div>
+  <div class="tables-grid">
+
+    <!-- users -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">users</span>
+        <span class="writer-tag c-blue">signup + submit</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">username</span><span class="col-type">VARCHAR unique</span></div>
+        <div class="col-row"><span class="col-name">email</span><span class="col-type">VARCHAR unique</span></div>
+        <div class="col-row"><span class="col-name">passwordHash</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">streak</span><span class="col-type">INT</span></div>
+        <div class="col-row"><span class="col-name">lastQuizDate</span><span class="col-type">DATE</span></div>
+        <div class="col-row"><span class="col-name">totalScore</span><span class="col-type">INT</span></div>
+        <div class="col-row"><span class="col-name">createdAt</span><span class="col-type">DATETIME</span></div>
+      </div>
+    </div>
+
+    <!-- movies -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">movies</span>
+        <span class="writer-tag c-green">startup</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">tmdbId</span><span class="col-type">BIGINT unique</span></div>
+        <div class="col-row"><span class="col-name">title</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">posterPath</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">releaseYear</span><span class="col-type">INT</span></div>
+        <div class="col-row"><span class="col-name">overview</span><span class="col-type">TEXT</span></div>
+      </div>
+    </div>
+
+    <!-- dialogues -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">dialogues</span>
+        <span class="writer-tag c-green">startup</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">text</span><span class="col-type">TEXT</span></div>
+        <div class="col-row"><span class="col-name">movieTitle</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">character_name</span><span class="col-type">VARCHAR</span></div>
+      </div>
+    </div>
+
+    <!-- director_entries -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">director_entries</span>
+        <span class="writer-tag c-green">startup</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">name</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">moviesJson</span><span class="col-type">TEXT (JSON array)</span></div>
+      </div>
+    </div>
+
+    <!-- quiz_questions -->
+    <div class="table-card span2">
+      <div class="table-header">
+        <span class="table-name">quiz_questions</span>
+        <span class="writer-tag c-gold">GET /quiz/today</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">type</span><span class="col-type">ENUM — POSTER_BLIND · WHO_SAID_IT · DIRECTORS_CUT · RELEASE_YEAR</span></div>
+        <div class="col-row"><span class="col-name">questionText</span><span class="col-type">TEXT — displayed to user</span></div>
+        <div class="col-row"><span class="col-name">posterPath</span><span class="col-type">VARCHAR — null for WHO_SAID_IT / DIRECTORS_CUT</span></div>
+        <div class="col-row"><span class="col-name">optionsJson</span><span class="col-type">TEXT — JSON array of 4 strings, sent to frontend</span></div>
+        <div class="col-row"><span class="col-name">correctAnswer</span><span class="col-type">VARCHAR — never sent to frontend, checked on submit</span></div>
+      </div>
+    </div>
+
+    <!-- daily_quizzes -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">daily_quizzes</span>
+        <span class="writer-tag c-gold">GET /quiz/today</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row"><span class="col-name">quizDate</span><span class="col-type">DATE unique</span></div>
+        <div class="col-row"><span class="col-name">theme</span><span class="col-type">VARCHAR</span></div>
+        <div class="col-row"><span class="col-name">themePosterPath</span><span class="col-type">VARCHAR</span></div>
+      </div>
+    </div>
+
+    <!-- daily_quiz_questions -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-name">daily_quiz_questions</span>
+        <span class="writer-tag c-gold">join table</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row fk"><span class="col-name"><span class="key-icon">🔗</span>daily_quiz_id</span><span class="col-type">FK → daily_quizzes</span></div>
+        <div class="col-row fk"><span class="col-name"><span class="key-icon">🔗</span>question_id</span><span class="col-type">FK → quiz_questions</span></div>
+        <div class="col-row"><span class="col-name" style="color:#6b7280;font-size:10px;font-style:italic">Managed by Hibernate (@ManyToMany). No Java entity class — pure join.</span><span></span></div>
+      </div>
+    </div>
+
+    <!-- quiz_attempts -->
+    <div class="table-card span2">
+      <div class="table-header">
+        <span class="table-name">quiz_attempts</span>
+        <span class="writer-tag c-red">POST /quiz/submit</span>
+      </div>
+      <div class="table-body">
+        <div class="col-row pk"><span class="col-name"><span class="key-icon">🔑</span>id</span><span class="col-type">BIGINT PK</span></div>
+        <div class="col-row fk"><span class="col-name"><span class="key-icon">🔗</span>user_id</span><span class="col-type">FK → users</span></div>
+        <div class="col-row"><span class="col-name">quizDate</span><span class="col-type">DATE — unique with user_id (prevents replay)</span></div>
+        <div class="col-row"><span class="col-name">answersJson</span><span class="col-type">TEXT — [{questionId, selectedAnswer, timeLeft}]</span></div>
+        <div class="col-row"><span class="col-name">score</span><span class="col-type">INT — final score after streak multiplier</span></div>
+        <div class="col-row"><span class="col-name">completedAt</span><span class="col-type">DATETIME</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Relationships -->
+  <div class="section-title">Relationships</div>
+  <div class="rel-grid">
+    <div class="rel-card">
+      <h3>Foreign Keys</h3>
+      <div class="rel-row">
+        <span class="rel-table">quiz_attempts.user_id</span>
+        <span class="rel-arrow">→</span>
+        <span class="rel-table">users.id</span>
+        <span class="rel-type">MANY-TO-ONE</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-table">daily_quiz_questions.daily_quiz_id</span>
+        <span class="rel-arrow">→</span>
+        <span class="rel-table">daily_quizzes.id</span>
+        <span class="rel-type">MANY-TO-MANY (join)</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-table">daily_quiz_questions.question_id</span>
+        <span class="rel-arrow">→</span>
+        <span class="rel-table">quiz_questions.id</span>
+        <span class="rel-type">MANY-TO-MANY (join)</span>
+      </div>
+    </div>
+
+    <div class="rel-card">
+      <h3>Unique Constraints</h3>
+      <div class="rel-row">
+        <span class="rel-table">daily_quizzes.quizDate</span>
+        <span class="rel-type">→ one quiz per day for all users</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-table">quiz_attempts (user_id + quizDate)</span>
+        <span class="rel-type">→ one attempt per user per day</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-table">movies.tmdbId</span>
+        <span class="rel-type">→ prevents duplicate TMDB movies</span>
+      </div>
+      <div class="rel-row">
+        <span class="rel-table">users.email, users.username</span>
+        <span class="rel-type">→ enforced at signup</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Request Flows -->
+  <div class="section-title">Request Flows</div>
+  <div class="flow-grid">
+
+    <div class="flow-card">
+      <h3>
+        <span class="endpoint c-green" style="padding:3px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;">APP BOOT</span>
+        DataSeeder
+      </h3>
+      <div class="flow-step"><div class="step-num">1</div><div class="step-text">Check <span class="table-ref">movies</span> count — skip if already seeded</div></div>
+      <div class="flow-step"><div class="step-num">2</div><div class="step-text">Call TMDB <code>/movie/popular</code> (English × 4 pages + Hindi × 2 pages)</div></div>
+      <div class="flow-step"><div class="step-num">3</div><div class="step-text">INSERT ~120 rows into <span class="table-ref">movies</span></div></div>
+      <div class="flow-step"><div class="step-num">4</div><div class="step-text">INSERT 20 rows into <span class="table-ref">dialogues</span></div></div>
+      <div class="flow-step"><div class="step-num">5</div><div class="step-text">INSERT 8 rows into <span class="table-ref">director_entries</span></div></div>
+    </div>
+
+    <div class="flow-card">
+      <h3>
+        <span class="endpoint c-blue" style="padding:3px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;">POST /api/auth/signup</span>
+      </h3>
+      <div class="flow-step"><div class="step-num">1</div><div class="step-text">Validate email + username not taken</div></div>
+      <div class="flow-step"><div class="step-num">2</div><div class="step-text">BCrypt-hash the password</div></div>
+      <div class="flow-step"><div class="step-num">3</div><div class="step-text">INSERT into <span class="table-ref">users</span> with streak=0, totalScore=0</div></div>
+      <div class="flow-step"><div class="step-num">4</div><div class="step-text">Generate JWT signed with secret key</div></div>
+      <div class="flow-step"><div class="step-num">5</div><div class="step-text">Return <code>{token, username, email}</code></div></div>
+    </div>
+
+    <div class="flow-card">
+      <h3>
+        <span class="endpoint c-gold" style="padding:3px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;">GET /api/quiz/today</span>
+      </h3>
+      <div class="flow-step"><div class="step-num">1</div><div class="step-text">JwtFilter reads <code>Authorization</code> header, validates token, sets user in SecurityContext</div></div>
+      <div class="flow-step"><div class="step-num">2</div><div class="step-text">SELECT <span class="table-ref">daily_quizzes</span> WHERE quizDate = today</div></div>
+      <div class="flow-step"><div class="step-num">3</div><div class="step-text">If not found → generate: READ <span class="table-ref">movies</span>, <span class="table-ref">dialogues</span>, <span class="table-ref">director_entries</span></div></div>
+      <div class="flow-step"><div class="step-num">4</div><div class="step-text">INSERT 5 rows into <span class="table-ref">quiz_questions</span>, 1 row into <span class="table-ref">daily_quizzes</span>, 5 rows into <span class="table-ref">daily_quiz_questions</span></div></div>
+      <div class="flow-step"><div class="step-num">5</div><div class="step-text">Check <span class="table-ref">quiz_attempts</span> for today — set <code>alreadyCompleted</code> flag</div></div>
+      <div class="flow-step"><div class="step-num">6</div><div class="step-text">Return questions <strong>without</strong> correctAnswer field</div></div>
+    </div>
+
+    <div class="flow-card">
+      <h3>
+        <span class="endpoint c-red" style="padding:3px 8px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:10px;">POST /api/quiz/submit</span>
+      </h3>
+      <div class="flow-step"><div class="step-num">1</div><div class="step-text">Check <span class="table-ref">quiz_attempts</span> — reject if already submitted today</div></div>
+      <div class="flow-step"><div class="step-num">2</div><div class="step-text">For each answer: compare with <code>correctAnswer</code> in <span class="table-ref">quiz_questions</span></div></div>
+      <div class="flow-step"><div class="step-num">3</div><div class="step-text">Score = base pts + timeLeft×2 (per question) × streak multiplier</div></div>
+      <div class="flow-step"><div class="step-num">4</div><div class="step-text">UPDATE <span class="table-ref">users</span>: streak++, lastQuizDate=today, totalScore+=score</div></div>
+      <div class="flow-step"><div class="step-num">5</div><div class="step-text">INSERT into <span class="table-ref">quiz_attempts</span> — locks out replay</div></div>
+      <div class="flow-step"><div class="step-num">6</div><div class="step-text">Return score breakdown + new streak</div></div>
+    </div>
+
+  </div>
+
+  <!-- Design Notes -->
+  <div class="section-title">Design Decisions</div>
+  <div class="notes-grid">
+    <div class="note-card border-gold">
+      <h4>Seed tables are read-only</h4>
+      <p>movies, dialogues, director_entries are written once at startup and only ever read by QuizService. They're the raw material for question generation.</p>
+    </div>
+    <div class="note-card border-red">
+      <h4>correctAnswer never leaves backend</h4>
+      <p>quiz_questions.correctAnswer is stored in DB but stripped from the API response. Only checked server-side on submit — client can't cheat by reading the response.</p>
+    </div>
+    <div class="note-card border-green">
+      <h4>Lazy quiz generation</h4>
+      <p>Daily quiz is generated on the first GET of the day, not by a cron job. A race condition guard (DataIntegrityViolationException catch) handles two simultaneous first requests.</p>
+    </div>
+    <div class="note-card border-gold">
+      <h4>Denormalized streak & score</h4>
+      <p>streak and totalScore live directly on the users row (not computed from attempts). This keeps the leaderboard query O(1) per user instead of requiring a SUM across all attempts.</p>
+    </div>
+    <div class="note-card border-red">
+      <h4>Unique constraint prevents replay</h4>
+      <p>quiz_attempts has a composite unique key on (user_id, quizDate). The DB itself enforces one attempt per user per day — no application logic needed beyond checking it.</p>
+    </div>
+    <div class="note-card border-green">
+      <h4>No @OrderColumn on @ManyToMany</h4>
+      <p>Removed after it caused null gaps in the questions list. Questions are shuffled before being saved so order doesn't matter — retrieval order from the join table is sufficient.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:48px;padding-top:24px;border-top:1px solid rgba(255,255,255,0.07);font-size:11px;color:#374151;font-family:'JetBrains Mono',monospace;">
+    CinePulse · Quiz DB Schema · Generated 2026-04-05
+  </div>
+
+</body>
+</html>
