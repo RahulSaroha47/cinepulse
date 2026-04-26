@@ -2,7 +2,7 @@ spring:
   application:
     name: cinepulse
   profiles:
-    active: local
+    active: ${SPRING_PROFILES_ACTIVE:local}
 
   datasource:
     url: ${DB_URL}
