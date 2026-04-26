@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-const API = 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_URL!;
 
 interface LeaderboardEntry { rank: number; username: string; score: number; }
 interface LeaderboardData { top7: LeaderboardEntry[]; playerRank: LeaderboardEntry | null; }

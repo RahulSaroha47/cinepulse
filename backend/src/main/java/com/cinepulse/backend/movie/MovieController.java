@@ -4,6 +4,7 @@ import com.cinepulse.backend.review.ReviewRequest;
 import com.cinepulse.backend.review.ReviewResponse;
 import com.cinepulse.backend.review.ReviewService;
 import com.cinepulse.backend.user.User;
+import com.cinepulse.backend.watchlist.WatchlistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -22,6 +23,7 @@ public class MovieController {
 
     private final MovieRepository movieRepository;
     private final ReviewService reviewService;
+    private final WatchlistRepository watchlistRepository;
 
     // ── Dashboard poster grid (public) ────────────────────────────
     @GetMapping("/posters")
@@ -52,7 +54,12 @@ public class MovieController {
     public ResponseEntity<MovieDetailDto> getMovie(
             @PathVariable Long id,
             @AuthenticationPrincipal User user) {
-        return ResponseEntity.ok(reviewService.getMovieDetail(id, user));
+        boolean inWatchlist = false;
+        if (user != null) {
+            Movie movie = movieRepository.findById(id).orElse(null);
+            inWatchlist = movie != null && watchlistRepository.existsByUserAndMovie(user, movie);
+        }
+        return ResponseEntity.ok(reviewService.getMovieDetail(id, user, inWatchlist));
     }
 
     // ── Reviews for a movie (public) ─────────────────────────────

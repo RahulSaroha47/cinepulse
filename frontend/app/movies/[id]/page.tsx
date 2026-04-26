@@ -19,6 +19,7 @@ type MovieDetail = {
   avgRating: number;
   reviewCount: number;
   userReviewed: boolean;
+  inWatchlist: boolean;
 };
 
 type Review = {
@@ -100,6 +101,7 @@ export default function MoviePage() {
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState('');
+  const [watchlistLoading, setWatchlistLoading] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('cp_token') : null;
   const currentUser = typeof window !== 'undefined' ? (() => {
@@ -111,14 +113,30 @@ export default function MoviePage() {
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
     Promise.all([
-      fetch(`http://localhost:8080/api/movies/${movieId}`, { headers }).then(r => r.ok ? r.json() : null),
-      fetch(`http://localhost:8080/api/movies/${movieId}/reviews`).then(r => r.ok ? r.json() : []),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies/${movieId}`, { headers }).then(r => r.ok ? r.json() : null),
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies/${movieId}/reviews`).then(r => r.ok ? r.json() : []),
     ]).then(([detail, revs]) => {
       if (detail) setMovie(detail);
       setReviews(revs);
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [movieId]);
+
+  async function toggleWatchlist() {
+    if (!token) { router.push('/login'); return; }
+    if (!movie) return;
+    setWatchlistLoading(true);
+    const method = movie.inWatchlist ? 'DELETE' : 'POST';
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/watchlist/${movie.id}`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setMovie(prev => prev ? { ...prev, inWatchlist: data.inWatchlist } : prev);
+    }
+    setWatchlistLoading(false);
+  }
 
   async function submitReview() {
     if (!token) { router.push('/login'); return; }
@@ -128,7 +146,7 @@ export default function MoviePage() {
     setSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch(`http://localhost:8080/api/movies/${movieId}/reviews`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies/${movieId}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ rating, body }),
@@ -277,6 +295,24 @@ export default function MoviePage() {
                 </div>
               </div>
             </div>
+
+            {/* Watchlist button */}
+            <button
+              onClick={toggleWatchlist}
+              disabled={watchlistLoading}
+              style={{
+                marginTop: 12, display: 'flex', alignItems: 'center', gap: 8,
+                padding: '9px 18px', borderRadius: 8, cursor: watchlistLoading ? 'default' : 'pointer',
+                fontFamily: 'var(--font-space-mono)', fontSize: 10, letterSpacing: '.1em',
+                textTransform: 'uppercase', transition: 'all .15s',
+                background: movie.inWatchlist ? 'rgba(244,196,48,.1)' : 'transparent',
+                border: movie.inWatchlist ? '1px solid rgba(244,196,48,.4)' : '1px solid var(--cp-border)',
+                color: movie.inWatchlist ? '#f4c430' : 'var(--cp-muted)',
+              }}
+            >
+              <span style={{ fontSize: 14 }}>{movie.inWatchlist ? '🔖' : '＋'}</span>
+              {watchlistLoading ? '...' : movie.inWatchlist ? 'In Watchlist' : 'Add to Watchlist'}
+            </button>
 
             {/* Overview */}
             {movie.overview && (

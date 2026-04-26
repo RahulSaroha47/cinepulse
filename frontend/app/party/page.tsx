@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-const API = 'http://localhost:8080';
+const API = process.env.NEXT_PUBLIC_API_URL!;
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
 const TIMER_SECONDS = 15;
 const MAX_PLAYERS = 6;

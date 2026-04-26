@@ -13,5 +13,6 @@ public record MovieDetailDto(
         String tagline,
         double avgRating,
         long reviewCount,
-        boolean userReviewed   // whether the calling user has already reviewed this
+        boolean userReviewed,
+        boolean inWatchlist
 ) {}

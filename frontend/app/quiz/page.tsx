@@ -81,7 +81,7 @@ export default function QuizPage() {
     const token = localStorage.getItem('cp_token');
     if (!token) { router.replace('/login'); return; }
 
-    fetch('http://localhost:8080/api/quiz/today', {
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/today`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.json())
@@ -154,7 +154,7 @@ export default function QuizPage() {
   async function submitQuiz(finalAnswers: AnswerRecord[]) {
     const token = localStorage.getItem('cp_token');
     try {
-      const res = await fetch('http://localhost:8080/api/quiz/submit', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/submit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

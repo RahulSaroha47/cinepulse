@@ -32,7 +32,7 @@ export default function MoviesPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8080/api/movies')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`)
       .then(r => r.ok ? r.json() : [])
       .then(data => { setMovies(data); setLoading(false); })
       .catch(() => setLoading(false));

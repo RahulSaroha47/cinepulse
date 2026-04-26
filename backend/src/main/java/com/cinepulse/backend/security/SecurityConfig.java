@@ -47,6 +47,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/quiz/**").authenticated()
                         .requestMatchers("/api/party/**").authenticated()
                         .requestMatchers("/api/jigsaw/**").authenticated()
+                        .requestMatchers("/api/watchlist/**").authenticated()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
@@ -57,7 +58,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:3000"));
+        String frontendUrl = System.getenv("FRONTEND_URL");
+        List<String> origins = frontendUrl != null && !frontendUrl.isBlank()
+                ? List.of("http://localhost:3000", frontendUrl)
+                : List.of("http://localhost:3000");
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);

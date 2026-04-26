@@ -11,6 +11,7 @@ const GAME_CARDS = [
   { icon: '🧩', name: 'Poster Jigsaw',   sub: 'Reassemble the poster', badge: 'live', glow: 'rgba(99,102,241,.06)', route: '/jigsaw' },
   { icon: '🎳', name: 'Party Mode',      sub: 'Local multiplayer',     badge: 'live', glow: 'rgba(139,92,246,.06)', route: '/party' },
   { icon: '⭐', name: 'Reviews',         sub: 'Rate & review films',   badge: 'live', glow: 'rgba(244,196,48,.04)', route: '/movies' },
+  { icon: '🔖', name: 'Watchlist',       sub: 'Films you want to see', badge: 'new',  glow: 'rgba(244,196,48,.05)', route: '/watchlist' },
 ];
 
 
@@ -62,32 +63,32 @@ export default function Dashboard() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    fetch('http://localhost:8080/api/users/me/stats', { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/users/me/stats`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setStats(data); })
       .catch(() => {});
 
-    fetch('http://localhost:8080/api/quiz/today', { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/quiz/today`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data?.theme) setQuizHero(data); })
       .catch(() => {});
 
-    fetch('http://localhost:8080/api/jigsaw/today', { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/jigsaw/today`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setJigsawStatus(data); })
       .catch(() => {});
 
-    fetch('http://localhost:8080/api/daily-movie/today', { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/daily-movie/today`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setWordleStatus(data); })
       .catch(() => {});
 
-    fetch('http://localhost:8080/api/movies/top-rated')
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies/top-rated`)
       .then(r => r.ok ? r.json() : [])
       .then(data => setTopRated(data))
       .catch(() => {});
 
-    fetch('http://localhost:8080/api/leaderboard', { headers })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/leaderboard`, { headers })
       .then(r => r.ok ? r.json() : null)
       .then(data => { if (data) setLeaderboard(data); })
       .catch(() => {});
@@ -396,9 +397,7 @@ export default function Dashboard() {
         )}
 
         {/* ── LEADERBOARD ── */}
-        <div className="grid grid-cols-[380px_1fr] gap-6">
-
-          {/* LEADERBOARD */}
+        <div>
           <div>
             <div className="mb-4">
               <span className="font-code text-[10px] tracking-[.15em] uppercase text-cp-muted">🏆 Leaderboard</span>

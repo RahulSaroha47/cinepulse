@@ -37,7 +37,7 @@ public class ReviewService {
                 .collect(Collectors.toList());
     }
 
-    public MovieDetailDto getMovieDetail(Long movieId, User user) {
+    public MovieDetailDto getMovieDetail(Long movieId, User user, boolean inWatchlist) {
         Movie m = movieRepository.findById(movieId)
                 .orElseThrow(() -> new IllegalArgumentException("Movie not found"));
         Double avg = reviewRepository.findAvgRatingByMovie(m);
@@ -48,7 +48,7 @@ public class ReviewService {
                 m.getOverview(), m.getGenre(), m.getLanguage(), m.getDirector(),
                 m.getCast(), m.getTagline(),
                 avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0,
-                count, reviewed
+                count, reviewed, inWatchlist
         );
     }
 
