@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── LEFT: Form ── */}
-      <div className="relative z-10 flex w-[42%] min-w-[420px] flex-col justify-center px-14 py-12"
+      <div className="relative z-10 flex w-full flex-col justify-center px-6 py-10 md:w-[42%] md:min-w-[420px] md:px-14 md:py-12"
         style={{
           background: "linear-gradient(135deg, #08080f 0%, #0d0b18 100%)",
         }}
@@ -25,8 +25,8 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
         {children}
       </div>
 
-      {/* ── RIGHT: Poster collage ── */}
-      <div className="relative flex-1 overflow-hidden">
+      {/* ── RIGHT: Poster collage (hidden on mobile) ── */}
+      <div className="relative hidden flex-1 overflow-hidden md:block">
         {/* Left-edge fade into form */}
         <div
           className="pointer-events-none absolute inset-y-0 left-0 z-10 w-56"
