@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,23 +27,42 @@ public class ReviewService {
     private volatile List<TopRatedMovieDto> topRatedCache;
     private volatile long topRatedCachedAt = 0;
 
-    private volatile List<MovieSummaryDto> defaultMoviesCache;
-    private volatile long defaultMoviesCachedAt = 0;
+    private volatile List<MovieSummaryDto> allMoviesCache;
+    private volatile long allMoviesCachedAt = 0;
 
     // ── Movie listing ─────────────────────────────────────────────
 
-    public synchronized List<MovieSummaryDto> getAllMovies(String search, int page) {
-        String q = (search == null) ? "" : search.trim();
-        // Cache only the default first page (search="" page=0) — most common request
-        if (q.isEmpty() && page == 0) {
-            if (defaultMoviesCache != null && System.currentTimeMillis() - defaultMoviesCachedAt < CACHE_TTL_MS) {
-                return defaultMoviesCache;
-            }
-            defaultMoviesCache = movieRepository.findMovieSummaries("", PageRequest.of(0, 50));
-            defaultMoviesCachedAt = System.currentTimeMillis();
-            return defaultMoviesCache;
+    private synchronized List<MovieSummaryDto> buildMoviesCache() {
+        if (allMoviesCache != null && System.currentTimeMillis() - allMoviesCachedAt < CACHE_TTL_MS) {
+            return allMoviesCache;
         }
-        return movieRepository.findMovieSummaries(q, PageRequest.of(page, 50));
+        // 2 queries total instead of N+1
+        Map<Long, double[]> ratings = reviewRepository.findAllRatingAggregates().stream()
+                .collect(Collectors.toMap(
+                        r -> (Long) r[0],
+                        r -> new double[]{ Math.round((Double) r[1] * 10.0) / 10.0, (double)(Long) r[2] }
+                ));
+        allMoviesCache = movieRepository.findAllByPosterPathIsNotNull().stream()
+                .map(m -> {
+                    double[] rv = ratings.getOrDefault(m.getId(), new double[]{0.0, 0.0});
+                    return new MovieSummaryDto(m.getId(), m.getTitle(), m.getPosterPath(),
+                            m.getReleaseYear(), m.getGenre(), rv[0], (long) rv[1]);
+                })
+                .sorted(Comparator.comparing(MovieSummaryDto::title))
+                .collect(Collectors.toList());
+        allMoviesCachedAt = System.currentTimeMillis();
+        return allMoviesCache;
+    }
+
+    public List<MovieSummaryDto> getAllMovies(String search, int page) {
+        List<MovieSummaryDto> all = buildMoviesCache();
+        String q = (search == null) ? "" : search.trim().toLowerCase();
+        return all.stream()
+                .filter(m -> q.isEmpty()
+                        || m.title().toLowerCase().contains(q)
+                        || (m.genre() != null && m.genre().toLowerCase().contains(q)))
+                .limit(50)
+                .collect(Collectors.toList());
     }
 
     public MovieDetailDto getMovieDetail(Long movieId, User user, boolean inWatchlist) {

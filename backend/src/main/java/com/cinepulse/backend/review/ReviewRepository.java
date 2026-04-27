@@ -36,4 +36,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
         ORDER BY AVG(r.rating) DESC, COUNT(r) DESC
         """)
     List<TopRatedMovieDto> findTopRatedSummaries(Pageable pageable);
+
+    @Query("SELECT r.movie.id, AVG(r.rating), COUNT(r) FROM Review r GROUP BY r.movie.id")
+    List<Object[]> findAllRatingAggregates();
 }
