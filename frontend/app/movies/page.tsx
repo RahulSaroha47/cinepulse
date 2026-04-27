@@ -25,6 +25,23 @@ function Stars({ rating }: { rating: number }) {
   );
 }
 
+const MOVIES_CACHE_KEY = 'cp_movies_v1';
+const MOVIES_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+function readCache(): Movie[] | null {
+  try {
+    const raw = localStorage.getItem(MOVIES_CACHE_KEY);
+    if (!raw) return null;
+    const { data, ts } = JSON.parse(raw);
+    if (Date.now() - ts > MOVIES_CACHE_TTL) return null;
+    return data;
+  } catch { return null; }
+}
+
+function writeCache(data: Movie[]) {
+  try { localStorage.setItem(MOVIES_CACHE_KEY, JSON.stringify({ data, ts: Date.now() })); } catch {}
+}
+
 export default function MoviesPage() {
   const router = useRouter();
   const [movies, setMovies] = useState<Movie[]>([]);
@@ -33,11 +50,16 @@ export default function MoviesPage() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function fetchMovies(q: string) {
+    // Serve from localStorage cache for the default (no search) case
+    if (!q) {
+      const cached = readCache();
+      if (cached) { setMovies(cached); setLoading(false); return; }
+    }
     setLoading(true);
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/movies?search=${encodeURIComponent(q)}`;
     fetch(url)
       .then(r => r.ok ? r.json() : [])
-      .then(data => { setMovies(data); setLoading(false); })
+      .then(data => { setMovies(data); setLoading(false); if (!q) writeCache(data); })
       .catch(() => setLoading(false));
   }
 

@@ -20,14 +20,27 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MovieRepository movieRepository;
 
-    private static final long TOP_RATED_TTL_MS = 5 * 60 * 1000L;
+    private static final long CACHE_TTL_MS = 5 * 60 * 1000L;
+
     private volatile List<TopRatedMovieDto> topRatedCache;
     private volatile long topRatedCachedAt = 0;
 
+    private volatile List<MovieSummaryDto> defaultMoviesCache;
+    private volatile long defaultMoviesCachedAt = 0;
+
     // ── Movie listing ─────────────────────────────────────────────
 
-    public List<MovieSummaryDto> getAllMovies(String search, int page) {
+    public synchronized List<MovieSummaryDto> getAllMovies(String search, int page) {
         String q = (search == null) ? "" : search.trim();
+        // Cache only the default first page (search="" page=0) — most common request
+        if (q.isEmpty() && page == 0) {
+            if (defaultMoviesCache != null && System.currentTimeMillis() - defaultMoviesCachedAt < CACHE_TTL_MS) {
+                return defaultMoviesCache;
+            }
+            defaultMoviesCache = movieRepository.findMovieSummaries("", PageRequest.of(0, 50));
+            defaultMoviesCachedAt = System.currentTimeMillis();
+            return defaultMoviesCache;
+        }
         return movieRepository.findMovieSummaries(q, PageRequest.of(page, 50));
     }
 
