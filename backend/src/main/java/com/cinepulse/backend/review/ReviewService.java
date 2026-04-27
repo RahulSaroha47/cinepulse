@@ -83,7 +83,7 @@ public class ReviewService {
     // ── Top rated (in-memory cached, 5 min TTL) ──────────────────
 
     public synchronized List<TopRatedMovieDto> getTopRated() {
-        if (topRatedCache != null && System.currentTimeMillis() - topRatedCachedAt < TOP_RATED_TTL_MS) {
+        if (topRatedCache != null && System.currentTimeMillis() - topRatedCachedAt < CACHE_TTL_MS) {
             return topRatedCache;
         }
         topRatedCache = reviewRepository.findTopRatedSummaries(PageRequest.of(0, 10)).stream()
