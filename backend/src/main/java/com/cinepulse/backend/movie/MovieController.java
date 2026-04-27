@@ -39,8 +39,10 @@ public class MovieController {
 
     // ── Browse all movies (public) ────────────────────────────────
     @GetMapping
-    public ResponseEntity<List<MovieSummaryDto>> getAllMovies() {
-        return ResponseEntity.ok(reviewService.getAllMovies());
+    public ResponseEntity<List<MovieSummaryDto>> getAllMovies(
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "0") int page) {
+        return ResponseEntity.ok(reviewService.getAllMovies(search, page));
     }
 
     // ── Top 10 rated (public) ─────────────────────────────────────

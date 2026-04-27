@@ -4,8 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "java -jar target/*.jar",
-    "healthcheckPath": "/actuator/health",
+    "startCommand": "java -Dserver.port=$PORT -jar target/*.jar",
     "restartPolicyType": "ON_FAILURE"
   }
 }

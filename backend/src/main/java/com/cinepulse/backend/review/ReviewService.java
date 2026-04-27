@@ -20,21 +20,15 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MovieRepository movieRepository;
 
+    private static final long TOP_RATED_TTL_MS = 5 * 60 * 1000L;
+    private volatile List<TopRatedMovieDto> topRatedCache;
+    private volatile long topRatedCachedAt = 0;
+
     // ── Movie listing ─────────────────────────────────────────────
 
-    public List<MovieSummaryDto> getAllMovies() {
-        return movieRepository.findAllByPosterPathIsNotNull().stream()
-                .map(m -> {
-                    Double avg = reviewRepository.findAvgRatingByMovie(m);
-                    long count = reviewRepository.countByMovie(m);
-                    return new MovieSummaryDto(
-                            m.getId(), m.getTitle(), m.getPosterPath(),
-                            m.getReleaseYear(), m.getGenre(),
-                            avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0,
-                            count
-                    );
-                })
-                .collect(Collectors.toList());
+    public List<MovieSummaryDto> getAllMovies(String search, int page) {
+        String q = (search == null) ? "" : search.trim();
+        return movieRepository.findMovieSummaries(q, PageRequest.of(page, 50));
     }
 
     public MovieDetailDto getMovieDetail(Long movieId, User user, boolean inWatchlist) {
@@ -52,21 +46,21 @@ public class ReviewService {
         );
     }
 
-    // ── Top rated ─────────────────────────────────────────────────
+    // ── Top rated (in-memory cached, 5 min TTL) ──────────────────
 
-    public List<TopRatedMovieDto> getTopRated() {
-        return reviewRepository.findTopRatedMovies(PageRequest.of(0, 10)).stream()
-                .map(m -> {
-                    Double avg = reviewRepository.findAvgRatingByMovie(m);
-                    long count = reviewRepository.countByMovie(m);
-                    return new TopRatedMovieDto(
-                            m.getId(), m.getTitle(), m.getPosterPath(), m.getReleaseYear(),
-                            m.getGenre(), m.getDirector(), m.getOverview(),
-                            avg != null ? Math.round(avg * 10.0) / 10.0 : 0.0,
-                            count
-                    );
-                })
+    public synchronized List<TopRatedMovieDto> getTopRated() {
+        if (topRatedCache != null && System.currentTimeMillis() - topRatedCachedAt < TOP_RATED_TTL_MS) {
+            return topRatedCache;
+        }
+        topRatedCache = reviewRepository.findTopRatedSummaries(PageRequest.of(0, 10)).stream()
+                .map(m -> new TopRatedMovieDto(
+                        m.id(), m.title(), m.posterPath(), m.releaseYear(), m.genre(),
+                        m.director(), m.overview(),
+                        Math.round(m.avgRating() * 10.0) / 10.0,
+                        m.reviewCount()))
                 .collect(Collectors.toList());
+        topRatedCachedAt = System.currentTimeMillis();
+        return topRatedCache;
     }
 
     // ── Reviews ───────────────────────────────────────────────────
@@ -92,7 +86,9 @@ public class ReviewService {
         review.setMovie(m);
         review.setRating(req.rating());
         review.setBody(req.body());
-        return toDto(reviewRepository.save(review));
+        ReviewResponse result = toDto(reviewRepository.save(review));
+        topRatedCache = null; // invalidate top-rated cache after new review
+        return result;
     }
 
     // ── Helpers ───────────────────────────────────────────────────

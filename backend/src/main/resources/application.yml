@@ -9,6 +9,11 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
+    hikari:
+      minimum-idle: 1
+      maximum-pool-size: 5
+      keepalive-time: 240000
+      connection-test-query: SELECT 1
 
   jpa:
     hibernate:
@@ -25,7 +30,7 @@ spring:
       password: ${REDIS_PASSWORD:}
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 jwt:
   secret: ${JWT_SECRET}

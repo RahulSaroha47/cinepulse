@@ -99,7 +99,7 @@ export default function Dashboard() {
 
       {/* ── NAVBAR ── */}
       <nav
-        className="sticky top-0 z-50 flex items-center gap-8 px-10 border-b border-white/7"
+        className="sticky top-0 z-50 flex items-center gap-2 md:gap-8 px-4 md:px-10 border-b border-white/7"
         style={{ height: 60, background: 'rgba(8,8,15,0.95)', backdropFilter: 'blur(12px)' }}
       >
         <div className="font-heading text-[1.3rem] tracking-[.1em] shrink-0">
@@ -172,17 +172,17 @@ export default function Dashboard() {
       </nav>
 
       {/* ── MAIN ── */}
-      <div className="max-w-[1300px] mx-auto px-10 py-8 pb-16">
+      <div className="max-w-[1300px] mx-auto px-4 md:px-10 py-6 md:py-8 pb-16">
 
         {/* ── GREETING + STATS ── */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
           <div>
-            <h1 className="font-heading text-[1.75rem] tracking-[.04em]">
+            <h1 className="font-heading text-[1.4rem] md:text-[1.75rem] tracking-[.04em]">
               {getGreeting()}{username ? `, ${username}` : ''} 👋
             </h1>
           </div>
           <div
-            className="flex gap-[1px] rounded-[10px] overflow-hidden"
+            className="flex gap-[1px] rounded-[10px] overflow-hidden self-start md:self-auto"
             style={{ background: 'rgba(255,255,255,.07)', border: '1px solid rgba(255,255,255,.07)' }}
           >
             {([
@@ -191,8 +191,8 @@ export default function Dashboard() {
               [stats ? `#${stats.rank}` : '—', 'Rank'],
               [stats ? stats.totalScore.toLocaleString() : '—', 'Score'],
             ] as [string, string][]).map(([val, label]) => (
-              <div key={label} className="px-6 py-3 bg-cp-surface text-center">
-                <div className="font-heading text-2xl text-cp-gold leading-none">{val}</div>
+              <div key={label} className="px-3 md:px-6 py-2 md:py-3 bg-cp-surface text-center">
+                <div className="font-heading text-lg md:text-2xl text-cp-gold leading-none">{val}</div>
                 <div className="font-code text-[9px] tracking-[.12em] uppercase text-cp-muted mt-[3px]">{label}</div>
               </div>
             ))}
@@ -200,7 +200,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── HERO — today's quiz ── */}
-        <div className="relative h-[300px] rounded-[14px] overflow-hidden mb-10 cursor-pointer group" onClick={() => router.push('/quiz')}>
+        <div className="relative h-[220px] md:h-[300px] rounded-[14px] overflow-hidden mb-10 cursor-pointer group" onClick={() => router.push('/quiz')}>
           <div
             className="absolute inset-0 bg-cover bg-top transition-transform duration-500 group-hover:scale-[1.02]"
             style={{
@@ -209,7 +209,7 @@ export default function Dashboard() {
             }}
           />
           <div
-            className="absolute inset-0 flex items-end p-10"
+            className="absolute inset-0 flex items-end p-5 md:p-10"
             style={{ background: 'linear-gradient(to right, rgba(8,8,15,.95) 35%, rgba(8,8,15,.3) 100%)' }}
           >
             <div className="max-w-[520px]">
@@ -217,7 +217,7 @@ export default function Dashboard() {
                 <span className="w-[5px] h-[5px] bg-cp-red rounded-full animate-pulse" />
                 TODAY'S QUIZ THEME
               </div>
-              <h2 className="font-heading text-[2.5rem] leading-none tracking-[.04em]">
+              <h2 className="font-heading text-[1.6rem] md:text-[2.5rem] leading-none tracking-[.04em]">
                 {quizHero ? quizHero.theme : '—'}
               </h2>
               <div className="flex items-center gap-4 mt-[.6rem] font-code text-[10px] text-white/40">
@@ -231,7 +231,7 @@ export default function Dashboard() {
                   </>
                 )}
               </div>
-              <p className="font-body text-base font-light text-white/55 mt-[.6rem] leading-relaxed">
+              <p className="font-body text-sm font-light text-white/55 mt-[.6rem] leading-relaxed hidden md:block">
                 Test your Bollywood knowledge — posters, dialogues, directors and release years.
               </p>
               <div className="flex gap-3 mt-5">
@@ -295,7 +295,7 @@ export default function Dashboard() {
         {topRated.length > 0 && (
           <div className="mb-10">
             <div className="flex items-baseline justify-between mb-4">
-              <h2 className="font-heading text-[1.6rem] tracking-[.06em] text-cp-text">🏆 Top 10 Rated on CinePulse</h2>
+              <h2 className="font-heading text-[1.1rem] md:text-[1.6rem] tracking-[.06em] text-cp-text">🏆 Top 10 Rated on CinePulse</h2>
               <span
                 className="font-code text-[9px] tracking-[.1em] uppercase text-cp-red cursor-pointer hover:underline"
                 onClick={() => router.push('/movies')}
@@ -305,7 +305,7 @@ export default function Dashboard() {
             </div>
 
             {/* Top 3 — large featured cards */}
-            <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
               {topRated.slice(0, 3).map((m, i) => (
                 <div
                   key={m.id}
@@ -333,7 +333,7 @@ export default function Dashboard() {
                     )}
                   </div>
                   {/* Info */}
-                  <div className="flex flex-col justify-center py-5 pr-10">
+                  <div className="flex flex-col justify-center py-4 md:py-5 pr-4 md:pr-10">
                     <div className="font-heading text-[1rem] tracking-[.04em] leading-tight mb-[6px]">{m.title}</div>
                     <div className="font-code text-[10px] text-cp-muted mb-[8px]">
                       {m.releaseYear}{m.genre ? ` · ${m.genre.split(',')[0].trim()}` : ''}
@@ -362,7 +362,7 @@ export default function Dashboard() {
 
             {/* Ranks 4–10 — small poster cards */}
             {topRated.length > 3 && (
-              <div className="grid grid-cols-7 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {topRated.slice(3).map((m, i) => (
                   <div
                     key={m.id}

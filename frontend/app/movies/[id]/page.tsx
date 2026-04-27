@@ -206,7 +206,7 @@ export default function MoviePage() {
 
       {/* ── NAVBAR ── */}
       <nav
-        className="sticky top-0 z-50 flex items-center gap-4 px-10 border-b border-white/7"
+        className="sticky top-0 z-50 flex items-center gap-2 md:gap-4 px-4 md:px-10 border-b border-white/7"
         style={{ height: 60, background: 'rgba(8,8,15,0.95)', backdropFilter: 'blur(12px)' }}
       >
         <div
@@ -216,7 +216,7 @@ export default function MoviePage() {
           CINE<span className="text-cp-red">PULSE</span>
         </div>
         <span className="font-code text-[10px] text-cp-muted">/ Films /</span>
-        <span className="font-heading text-[13px] tracking-[.04em] truncate max-w-[300px]">{movie.title}</span>
+        <span className="font-heading text-[13px] tracking-[.04em] truncate max-w-[120px] md:max-w-[300px]">{movie.title}</span>
         <button
           onClick={() => router.push('/movies')}
           className="ml-auto font-code text-[10px] tracking-[.1em] uppercase text-cp-muted hover:text-cp-text transition-colors"
@@ -226,11 +226,11 @@ export default function MoviePage() {
       </nav>
 
       {/* ── MAIN ── */}
-      <div className="relative z-10 max-w-[1200px] mx-auto px-10 py-10 pb-20">
-        <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr', gap: 48 }}>
+      <div className="relative z-10 max-w-[1200px] mx-auto px-4 md:px-10 py-6 md:py-10 pb-16 md:pb-20">
+        <div className="flex flex-col gap-8 lg:flex-row lg:gap-12 lg:items-start">
 
           {/* ── LEFT — poster + metadata ── */}
-          <div>
+          <div className="lg:w-[260px] lg:shrink-0">
             <div style={{
               borderRadius: 10, overflow: 'hidden',
               boxShadow: '0 24px 64px rgba(0,0,0,.7)',

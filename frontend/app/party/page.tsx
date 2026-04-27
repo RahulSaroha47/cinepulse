@@ -219,7 +219,7 @@ export default function PartyPage() {
     return (
       <div className="min-h-screen bg-cp-bg flex flex-col text-cp-text">
         <nav
-          className="flex items-center gap-4 px-10 border-b border-white/8"
+          className="flex items-center gap-3 md:gap-4 px-4 md:px-10 border-b border-white/8"
           style={{ height: 60, background: 'rgba(8,8,15,0.8)', backdropFilter: 'blur(20px)' }}
         >
           <button

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
 const TMDB_IMG = 'https://image.tmdb.org/t/p/w500';
@@ -30,29 +30,31 @@ export default function MoviesPage() {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/movies`)
+  function fetchMovies(q: string) {
+    setLoading(true);
+    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/movies?search=${encodeURIComponent(q)}`;
+    fetch(url)
       .then(r => r.ok ? r.json() : [])
       .then(data => { setMovies(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, []);
+  }
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return movies;
-    const q = search.toLowerCase();
-    return movies.filter(m =>
-      m.title.toLowerCase().includes(q) ||
-      (m.genre ?? '').toLowerCase().includes(q)
-    );
-  }, [movies, search]);
+  useEffect(() => { fetchMovies(''); }, []);
+
+  function handleSearch(val: string) {
+    setSearch(val);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchMovies(val.trim()), 350);
+  }
 
   return (
     <div className="min-h-screen bg-cp-bg text-cp-text">
 
       {/* ── NAVBAR ── */}
       <nav
-        className="sticky top-0 z-50 flex items-center gap-8 px-10 border-b border-white/7"
+        className="sticky top-0 z-50 flex items-center gap-4 md:gap-8 px-4 md:px-10 border-b border-white/7"
         style={{ height: 60, background: 'rgba(8,8,15,0.95)', backdropFilter: 'blur(12px)' }}
       >
         <div
@@ -72,14 +74,14 @@ export default function MoviesPage() {
         </button>
       </nav>
 
-      <div className="max-w-[1300px] mx-auto px-10 py-8 pb-16">
+      <div className="max-w-[1300px] mx-auto px-4 md:px-10 py-6 md:py-8 pb-16">
 
         {/* ── HEADER ── */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
           <div>
             <h1 className="font-heading text-[1.75rem] tracking-[.04em]">🎬 Bollywood Films</h1>
             <p className="font-code text-[10px] text-cp-muted mt-1">
-              {loading ? '—' : `${movies.length} films · click to read reviews`}
+              {loading ? '—' : search.trim() ? `${movies.length} results` : `${movies.length} films shown · search to filter all`}
             </p>
           </div>
           {/* Search */}
@@ -87,8 +89,8 @@ export default function MoviesPage() {
             type="text"
             placeholder="Search by title or genre..."
             value={search}
-            onChange={e => setSearch(e.target.value)}
-            className="w-[280px] bg-cp-surface border border-cp-border rounded-[8px] text-cp-text font-code text-[11px] px-4 py-[9px] outline-none"
+            onChange={e => handleSearch(e.target.value)}
+            className="w-full md:w-[280px] bg-cp-surface border border-cp-border rounded-[8px] text-cp-text font-code text-[11px] px-4 py-[9px] outline-none"
             style={{ caretColor: '#e63946' }}
           />
         </div>
@@ -96,11 +98,11 @@ export default function MoviesPage() {
         {/* ── GRID ── */}
         {loading ? (
           <div className="font-code text-[11px] text-cp-muted py-20 text-center">Loading films...</div>
-        ) : filtered.length === 0 ? (
+        ) : movies.length === 0 ? (
           <div className="font-code text-[11px] text-cp-muted py-20 text-center">No films found.</div>
         ) : (
-          <div className="grid grid-cols-7 gap-4">
-            {filtered.map(m => (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+            {movies.map(m => (
               <div
                 key={m.id}
                 onClick={() => router.push(`/movies/${m.id}`)}

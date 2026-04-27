@@ -218,7 +218,7 @@ export default function WordlePage() {
 
       {/* NAVBAR */}
       <nav
-        className="shrink-0 flex items-center gap-6 px-10 border-b border-white/8 z-10 relative"
+        className="shrink-0 flex items-center gap-3 md:gap-6 px-4 md:px-10 border-b border-white/8 z-10 relative"
         style={{ height: 60, background: 'rgba(8,8,15,0.6)', backdropFilter: 'blur(20px)' }}
       >
         <button
@@ -349,12 +349,12 @@ export default function WordlePage() {
 
       {/* GAME IN PROGRESS — two column layout */}
       {!gameOver && (
-        <div className="flex flex-1 overflow-hidden relative z-10">
+        <div className="flex flex-col md:flex-row flex-1 overflow-hidden relative z-10">
 
           {/* LEFT — Clues */}
           <div
-            className="flex flex-col overflow-y-auto px-8 py-7 border-r"
-            style={{ width: '55%', borderColor: 'rgba(255,255,255,.06)', background: 'rgba(8,8,15,.45)', backdropFilter: 'blur(16px)' }}
+            className="flex flex-col overflow-y-auto px-6 md:px-8 py-5 md:py-7 border-b md:border-b-0 md:border-r h-[42%] md:h-auto md:w-[55%] shrink-0"
+            style={{ borderColor: 'rgba(255,255,255,.06)', background: 'rgba(8,8,15,.45)', backdropFilter: 'blur(16px)' }}
           >
             <div className="mb-5">
               <h1 className="font-heading text-[1.7rem] tracking-[.04em] mb-1">Guess Today's Movie</h1>
@@ -407,8 +407,8 @@ export default function WordlePage() {
 
           {/* RIGHT — Guesses + Input */}
           <div
-            className="flex flex-col overflow-hidden"
-            style={{ width: '45%', background: 'rgba(8,8,15,.35)', backdropFilter: 'blur(16px)' }}
+            className="flex flex-col flex-1 overflow-hidden"
+            style={{ background: 'rgba(8,8,15,.35)', backdropFilter: 'blur(16px)' }}
           >
             {/* Guess slots */}
             <div className="flex-1 overflow-y-auto px-7 py-7">
